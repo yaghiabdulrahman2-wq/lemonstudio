@@ -26,7 +26,7 @@ function TreeItem({
   node: TreeNode;
   depth: number;
   path: string;
-  onSelect?: (path: string, node: TreeNode) => void;
+  onSelect?: ((path: string, node: TreeNode) => void) | undefined;
 }) {
   const [open, setOpen] = useState(depth < 1);
   const Icon = iconFor(node.className);
@@ -77,7 +77,7 @@ export function ExplorerTree({
   onSelect,
 }: {
   tree: { children?: TreeNode[] } | null;
-  onSelect?: (path: string, node: TreeNode) => void;
+  onSelect?: ((path: string, node: TreeNode) => void) | undefined;
 }) {
   if (!tree?.children?.length) {
     return (
@@ -99,8 +99,8 @@ export function ExplorerTree({
 /** Flattens the tree into script paths for @mention autocomplete. */
 export function collectScripts(
   tree: { children?: TreeNode[] } | null,
-): { path: string; name: string; className: string; lines?: number }[] {
-  const out: { path: string; name: string; className: string; lines?: number }[] = [];
+): { path: string; name: string; className: string; lines?: number | undefined }[] {
+  const out: { path: string; name: string; className: string; lines?: number | undefined }[] = [];
   const walk = (nodes: TreeNode[] | undefined, prefix: string) => {
     for (const node of nodes ?? []) {
       const path = prefix ? `${prefix}/${node.name}` : node.name;

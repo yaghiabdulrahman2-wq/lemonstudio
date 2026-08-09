@@ -14,7 +14,204 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assets: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          project_id: string | null
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          id?: string
+          kind: string
+          name: string
+          project_id?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          project_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commands: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          dispatched_at: string | null
+          error: string | null
+          id: string
+          payload: Json
+          project_id: string
+          result: Json | null
+          status: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          dispatched_at?: string | null
+          error?: string | null
+          id?: string
+          payload?: Json
+          project_id: string
+          result?: Json | null
+          status?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          dispatched_at?: string | null
+          error?: string | null
+          id?: string
+          payload?: Json
+          project_id?: string
+          result?: Json | null
+          status?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commands_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          actions: Json | null
+          content: string
+          created_at: string
+          id: string
+          project_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          actions?: Json | null
+          content?: string
+          created_at?: string
+          id?: string
+          project_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          actions?: Json | null
+          content?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          connection_token: string
+          created_at: string
+          description: string
+          id: string
+          name: string
+          place_id: string
+          place_name: string | null
+          place_tree: Json | null
+          place_tree_updated_at: string | null
+          plugin_last_seen_at: string | null
+          smart_mode: boolean
+          tags: string[]
+          universe_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          connection_token?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name: string
+          place_id?: string
+          place_name?: string | null
+          place_tree?: Json | null
+          place_tree_updated_at?: string | null
+          plugin_last_seen_at?: string | null
+          smart_mode?: boolean
+          tags?: string[]
+          universe_id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          connection_token?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          place_id?: string
+          place_name?: string | null
+          place_tree?: Json | null
+          place_tree_updated_at?: string | null
+          plugin_last_seen_at?: string | null
+          smart_mode?: boolean
+          tags?: string[]
+          universe_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

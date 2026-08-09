@@ -10,33 +10,89 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicPluginConnectRouteImport } from './routes/api/public/plugin/connect'
+import { Route as ApiPublicPluginPollRouteImport } from './routes/api/public/plugin/poll'
+import { Route as ApiPublicPluginResultRouteImport } from './routes/api/public/plugin/result'
+import { Route as ApiPublicPluginTreeRouteImport } from './routes/api/public/plugin/tree'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPluginConnectRoute = ApiPublicPluginConnectRouteImport.update({
+  id: '/api/public/plugin/connect',
+  path: '/api/public/plugin/connect',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPluginPollRoute = ApiPublicPluginPollRouteImport.update({
+  id: '/api/public/plugin/poll',
+  path: '/api/public/plugin/poll',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPluginResultRoute = ApiPublicPluginResultRouteImport.update({
+  id: '/api/public/plugin/result',
+  path: '/api/public/plugin/result',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPluginTreeRoute = ApiPublicPluginTreeRouteImport.update({
+  id: '/api/public/plugin/tree',
+  path: '/api/public/plugin/tree',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/plugin/connect': typeof ApiPublicPluginConnectRoute
+  '/api/public/plugin/poll': typeof ApiPublicPluginPollRoute
+  '/api/public/plugin/result': typeof ApiPublicPluginResultRoute
+  '/api/public/plugin/tree': typeof ApiPublicPluginTreeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/plugin/connect': typeof ApiPublicPluginConnectRoute
+  '/api/public/plugin/poll': typeof ApiPublicPluginPollRoute
+  '/api/public/plugin/result': typeof ApiPublicPluginResultRoute
+  '/api/public/plugin/tree': typeof ApiPublicPluginTreeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/plugin/connect': typeof ApiPublicPluginConnectRoute
+  '/api/public/plugin/poll': typeof ApiPublicPluginPollRoute
+  '/api/public/plugin/result': typeof ApiPublicPluginResultRoute
+  '/api/public/plugin/tree': typeof ApiPublicPluginTreeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/api/public/plugin/connect'
+    | '/api/public/plugin/poll'
+    | '/api/public/plugin/result'
+    | '/api/public/plugin/tree'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/api/public/plugin/connect'
+    | '/api/public/plugin/poll'
+    | '/api/public/plugin/result'
+    | '/api/public/plugin/tree'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/public/plugin/connect'
+    | '/api/public/plugin/poll'
+    | '/api/public/plugin/result'
+    | '/api/public/plugin/tree'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicPluginConnectRoute: typeof ApiPublicPluginConnectRoute
+  ApiPublicPluginPollRoute: typeof ApiPublicPluginPollRoute
+  ApiPublicPluginResultRoute: typeof ApiPublicPluginResultRoute
+  ApiPublicPluginTreeRoute: typeof ApiPublicPluginTreeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +104,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/plugin/connect': {
+      id: '/api/public/plugin/connect'
+      path: '/api/public/plugin/connect'
+      fullPath: '/api/public/plugin/connect'
+      preLoaderRoute: typeof ApiPublicPluginConnectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/plugin/poll': {
+      id: '/api/public/plugin/poll'
+      path: '/api/public/plugin/poll'
+      fullPath: '/api/public/plugin/poll'
+      preLoaderRoute: typeof ApiPublicPluginPollRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/plugin/result': {
+      id: '/api/public/plugin/result'
+      path: '/api/public/plugin/result'
+      fullPath: '/api/public/plugin/result'
+      preLoaderRoute: typeof ApiPublicPluginResultRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/plugin/tree': {
+      id: '/api/public/plugin/tree'
+      path: '/api/public/plugin/tree'
+      fullPath: '/api/public/plugin/tree'
+      preLoaderRoute: typeof ApiPublicPluginTreeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicPluginConnectRoute: ApiPublicPluginConnectRoute,
+  ApiPublicPluginPollRoute: ApiPublicPluginPollRoute,
+  ApiPublicPluginResultRoute: ApiPublicPluginResultRoute,
+  ApiPublicPluginTreeRoute: ApiPublicPluginTreeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

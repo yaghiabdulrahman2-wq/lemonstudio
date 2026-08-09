@@ -31,7 +31,12 @@ export async function queueCommand(
 ): Promise<CommandRow> {
   const { data, error } = await supabase
     .from("commands")
-    .insert({ project_id: projectId, user_id: userId, type, payload })
+    .insert({
+      project_id: projectId,
+      user_id: userId,
+      type,
+      payload: payload as never,
+    })
     .select()
     .single();
 

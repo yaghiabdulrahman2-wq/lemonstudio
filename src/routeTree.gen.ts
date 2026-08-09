@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiPublicPluginConnectRouteImport } from './routes/api/public/plugin/connect'
 import { Route as ApiPublicPluginPollRouteImport } from './routes/api/public/plugin/poll'
 import { Route as ApiPublicPluginResultRouteImport } from './routes/api/public/plugin/result'
@@ -18,6 +19,11 @@ import { Route as ApiPublicPluginTreeRouteImport } from './routes/api/public/plu
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicPluginConnectRoute = ApiPublicPluginConnectRouteImport.update({
@@ -43,6 +49,7 @@ const ApiPublicPluginTreeRoute = ApiPublicPluginTreeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/chat': typeof ApiChatRoute
   '/api/public/plugin/connect': typeof ApiPublicPluginConnectRoute
   '/api/public/plugin/poll': typeof ApiPublicPluginPollRoute
   '/api/public/plugin/result': typeof ApiPublicPluginResultRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/chat': typeof ApiChatRoute
   '/api/public/plugin/connect': typeof ApiPublicPluginConnectRoute
   '/api/public/plugin/poll': typeof ApiPublicPluginPollRoute
   '/api/public/plugin/result': typeof ApiPublicPluginResultRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/chat': typeof ApiChatRoute
   '/api/public/plugin/connect': typeof ApiPublicPluginConnectRoute
   '/api/public/plugin/poll': typeof ApiPublicPluginPollRoute
   '/api/public/plugin/result': typeof ApiPublicPluginResultRoute
@@ -67,6 +76,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api/chat'
     | '/api/public/plugin/connect'
     | '/api/public/plugin/poll'
     | '/api/public/plugin/result'
@@ -74,6 +84,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/chat'
     | '/api/public/plugin/connect'
     | '/api/public/plugin/poll'
     | '/api/public/plugin/result'
@@ -81,6 +92,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/api/chat'
     | '/api/public/plugin/connect'
     | '/api/public/plugin/poll'
     | '/api/public/plugin/result'
@@ -89,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiChatRoute: typeof ApiChatRoute
   ApiPublicPluginConnectRoute: typeof ApiPublicPluginConnectRoute
   ApiPublicPluginPollRoute: typeof ApiPublicPluginPollRoute
   ApiPublicPluginResultRoute: typeof ApiPublicPluginResultRoute
@@ -102,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/plugin/connect': {
@@ -137,6 +157,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiChatRoute: ApiChatRoute,
   ApiPublicPluginConnectRoute: ApiPublicPluginConnectRoute,
   ApiPublicPluginPollRoute: ApiPublicPluginPollRoute,
   ApiPublicPluginResultRoute: ApiPublicPluginResultRoute,

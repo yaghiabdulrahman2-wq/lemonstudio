@@ -2,8 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Blocks,
-  Check,
-  Copy,
   Hammer,
   Loader2,
   Mountain,
@@ -73,7 +71,6 @@ function ProjectWorkspace() {
   const [streaming, setStreaming] = useState(false);
   const [draft, setDraft] = useState("");
   const [buildMode, setBuildMode] = useState(false);
-  const [copied, setCopied] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 

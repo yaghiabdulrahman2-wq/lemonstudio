@@ -276,12 +276,19 @@ function ProjectWorkspace() {
   if (!project) {
     return (
       <div className="mx-auto max-w-2xl p-8">
-        <Card className="border-destructive/40 p-6">
-          <p className="text-sm text-destructive">This project could not be loaded.</p>
+        <Card className="p-6">
+          <p className="text-sm font-medium">This project isn&apos;t on this device.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Projects live in the browser you created them in. Head back and open one of yours.
+          </p>
+          <Button asChild className="mt-4" size="sm">
+            <Link to="/dashboard">Back to projects</Link>
+          </Button>
         </Card>
       </div>
     );
   }
+
 
   const statusBadge =
     status === "connected"

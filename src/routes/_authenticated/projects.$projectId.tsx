@@ -7,6 +7,7 @@ import {
   Hammer,
   Loader2,
   Mountain,
+  Plug,
   RefreshCw,
   Send,
   Sparkles,
@@ -18,12 +19,14 @@ import { toast } from "sonner";
 import { CodeBlock } from "@/components/code-block";
 import { ExplorerTree, collectScripts, type TreeNode } from "@/components/explorer-tree";
 import { Markdown } from "@/components/markdown";
+import { PluginSetupPanel } from "@/components/plugin-setup";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
@@ -263,13 +266,6 @@ function ProjectWorkspace() {
     }
   };
 
-  const copyToken = async () => {
-    if (!project) return;
-    await navigator.clipboard.writeText(project.connection_token);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1600);
-  };
-
   if (projectQuery.isLoading) {
     return (
       <div className="grid h-[60vh] place-items-center">
@@ -319,6 +315,21 @@ function ProjectWorkspace() {
           >
             <RefreshCw className="size-4" /> Sync place
           </Button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button size="sm" variant="outline" className="lg:hidden">
+                <Plug className="size-4" /> Setup
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[min(24rem,92vw)] overflow-auto">
+              <SheetHeader>
+                <SheetTitle>Studio setup</SheetTitle>
+              </SheetHeader>
+              <div className="px-4 pb-8">
+                <PluginSetupPanel token={project.connection_token} />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </header>
 

@@ -424,25 +424,7 @@ function ProjectWorkspace() {
             </TabsList>
 
             <TabsContent value="connect" className="scroll-slim min-h-0 flex-1 overflow-auto px-4 pb-6">
-              <h3 className="text-sm font-semibold">Connect to Studio</h3>
-              <ol className="mt-3 space-y-2 text-xs text-muted-foreground">
-                <li>1. Open your place in Roblox Studio.</li>
-                <li>
-                  2. Game Settings → Security → turn <strong>Allow HTTP Requests</strong> on.
-                </li>
-                <li>
-                  3. Install the Lemonade plugin (Plugin page has the code and the one-time setup).
-                </li>
-                <li>4. Paste this token into the plugin and press Connect.</li>
-              </ol>
-
-              <Label className="mt-4 block text-xs">Connection token</Label>
-              <div className="mt-1.5 flex gap-2">
-                <Input readOnly value={project.connection_token} className="font-mono text-xs" />
-                <Button size="icon" variant="outline" onClick={copyToken} aria-label="Copy token">
-                  {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                </Button>
-              </div>
+              <PluginSetupPanel token={project.connection_token} />
 
               <Card className="mt-4 space-y-2 bg-surface/60 p-3 text-xs text-muted-foreground">
                 <p>
@@ -458,6 +440,7 @@ function ProjectWorkspace() {
                     : "never"}
                 </p>
               </Card>
+
 
               <div className="mt-4 grid gap-2">
                 <Button

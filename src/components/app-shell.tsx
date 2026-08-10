@@ -1,31 +1,18 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { Library, LayoutGrid, LogOut, Plug, Settings } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { LayoutGrid, Plug } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/dashboard", label: "Projects", icon: LayoutGrid },
-  { to: "/assets", label: "Assets", icon: Library },
   { to: "/plugin", label: "Plugin", icon: Plug },
-  { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-
-  const signOut = async () => {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    void navigate({ to: "/auth", replace: true });
-  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -53,11 +40,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="p-3">
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2.5" onClick={signOut}>
-            <LogOut className="size-4" /> Sign out
-          </Button>
-        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -71,9 +53,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </Link>
               </Button>
             ))}
-            <Button variant="ghost" size="icon" aria-label="Sign out" onClick={signOut}>
-              <LogOut className="size-4" />
-            </Button>
           </div>
         </div>
         <main className="min-w-0 flex-1">{children}</main>

@@ -75,7 +75,7 @@ function Pricing() {
               ))}
             </ul>
             <Button asChild className="mt-6 w-full" variant={tier.highlight ? "default" : "outline"}>
-              <Link to="/auth">Get started</Link>
+              <Link to="/dashboard">Get started</Link>
             </Button>
           </Card>
         ))}

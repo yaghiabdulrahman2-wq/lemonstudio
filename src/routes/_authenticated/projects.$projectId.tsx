@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   Blocks,
   Hammer,
@@ -76,17 +76,19 @@ function ProjectWorkspace() {
 
   const projectQuery = useQuery({
     queryKey: ["project", projectId],
-    queryFn: async (): Promise<ProjectRow> => {
+    queryFn: async (): Promise<ProjectRow | null> => {
       const { data, error } = await supabase
         .from("projects")
         .select("*")
         .eq("id", projectId)
-        .single();
+        .maybeSingle();
       if (error) throw new Error(error.message);
-      return data as unknown as ProjectRow;
+      return (data as unknown as ProjectRow | null) ?? null;
     },
+    retry: 1,
     refetchInterval: 4000,
   });
+
 
   const messagesQuery = useQuery({
     queryKey: ["messages", projectId],
@@ -274,12 +276,19 @@ function ProjectWorkspace() {
   if (!project) {
     return (
       <div className="mx-auto max-w-2xl p-8">
-        <Card className="border-destructive/40 p-6">
-          <p className="text-sm text-destructive">This project could not be loaded.</p>
+        <Card className="p-6">
+          <p className="text-sm font-medium">This project isn&apos;t on this device.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Projects live in the browser you created them in. Head back and open one of yours.
+          </p>
+          <Button asChild className="mt-4" size="sm">
+            <Link to="/dashboard">Back to projects</Link>
+          </Button>
         </Card>
       </div>
     );
   }
+
 
   const statusBadge =
     status === "connected"

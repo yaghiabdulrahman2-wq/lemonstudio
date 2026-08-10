@@ -123,10 +123,10 @@ function Landing() {
           </nav>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm">
-              <Link to="/auth">Sign in</Link>
+              <Link to="/dashboard">Open app</Link>
             </Button>
             <Button asChild size="sm">
-              <Link to="/auth">
+              <Link to="/dashboard">
                 Start building <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -154,7 +154,7 @@ function Landing() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button asChild size="lg" className="glow-primary">
-                <Link to="/auth">
+                <Link to="/dashboard">
                   Connect your place <ArrowRight className="size-4" />
                 </Link>
               </Button>
@@ -250,7 +250,7 @@ function Landing() {
             Connect a place and let the AI put the code where it belongs.
           </p>
           <Button asChild size="lg" className="mt-8 glow-primary">
-            <Link to="/auth">
+            <Link to="/dashboard">
               Create your first project <ArrowRight className="size-4" />
             </Link>
           </Button>

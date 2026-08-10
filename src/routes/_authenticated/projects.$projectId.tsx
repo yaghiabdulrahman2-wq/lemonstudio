@@ -76,17 +76,19 @@ function ProjectWorkspace() {
 
   const projectQuery = useQuery({
     queryKey: ["project", projectId],
-    queryFn: async (): Promise<ProjectRow> => {
+    queryFn: async (): Promise<ProjectRow | null> => {
       const { data, error } = await supabase
         .from("projects")
         .select("*")
         .eq("id", projectId)
-        .single();
+        .maybeSingle();
       if (error) throw new Error(error.message);
-      return data as unknown as ProjectRow;
+      return (data as unknown as ProjectRow | null) ?? null;
     },
+    retry: 1,
     refetchInterval: 4000,
   });
+
 
   const messagesQuery = useQuery({
     queryKey: ["messages", projectId],

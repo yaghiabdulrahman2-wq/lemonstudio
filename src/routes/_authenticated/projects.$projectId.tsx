@@ -2,11 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Blocks,
-  Check,
-  Copy,
   Hammer,
   Loader2,
   Mountain,
+  Plug,
   RefreshCw,
   Send,
   Sparkles,
@@ -18,12 +17,14 @@ import { toast } from "sonner";
 import { CodeBlock } from "@/components/code-block";
 import { ExplorerTree, collectScripts, type TreeNode } from "@/components/explorer-tree";
 import { Markdown } from "@/components/markdown";
+import { PluginSetupPanel } from "@/components/plugin-setup";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
@@ -70,7 +71,6 @@ function ProjectWorkspace() {
   const [streaming, setStreaming] = useState(false);
   const [draft, setDraft] = useState("");
   const [buildMode, setBuildMode] = useState(false);
-  const [copied, setCopied] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -263,13 +263,6 @@ function ProjectWorkspace() {
     }
   };
 
-  const copyToken = async () => {
-    if (!project) return;
-    await navigator.clipboard.writeText(project.connection_token);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1600);
-  };
-
   if (projectQuery.isLoading) {
     return (
       <div className="grid h-[60vh] place-items-center">
@@ -319,6 +312,21 @@ function ProjectWorkspace() {
           >
             <RefreshCw className="size-4" /> Sync place
           </Button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button size="sm" variant="outline" className="lg:hidden">
+                <Plug className="size-4" /> Setup
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[min(24rem,92vw)] overflow-auto">
+              <SheetHeader>
+                <SheetTitle>Studio setup</SheetTitle>
+              </SheetHeader>
+              <div className="px-4 pb-8">
+                <PluginSetupPanel token={project.connection_token} />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </header>
 
@@ -424,25 +432,7 @@ function ProjectWorkspace() {
             </TabsList>
 
             <TabsContent value="connect" className="scroll-slim min-h-0 flex-1 overflow-auto px-4 pb-6">
-              <h3 className="text-sm font-semibold">Connect to Studio</h3>
-              <ol className="mt-3 space-y-2 text-xs text-muted-foreground">
-                <li>1. Open your place in Roblox Studio.</li>
-                <li>
-                  2. Game Settings → Security → turn <strong>Allow HTTP Requests</strong> on.
-                </li>
-                <li>
-                  3. Install the Lemonade plugin (Plugin page has the code and the one-time setup).
-                </li>
-                <li>4. Paste this token into the plugin and press Connect.</li>
-              </ol>
-
-              <Label className="mt-4 block text-xs">Connection token</Label>
-              <div className="mt-1.5 flex gap-2">
-                <Input readOnly value={project.connection_token} className="font-mono text-xs" />
-                <Button size="icon" variant="outline" onClick={copyToken} aria-label="Copy token">
-                  {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                </Button>
-              </div>
+              <PluginSetupPanel token={project.connection_token} />
 
               <Card className="mt-4 space-y-2 bg-surface/60 p-3 text-xs text-muted-foreground">
                 <p>
@@ -458,6 +448,7 @@ function ProjectWorkspace() {
                     : "never"}
                 </p>
               </Card>
+
 
               <div className="mt-4 grid gap-2">
                 <Button

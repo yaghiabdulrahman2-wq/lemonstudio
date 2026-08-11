@@ -572,11 +572,30 @@ function ProjectWorkspace() {
             </TabsContent>
 
             <TabsContent value="explorer" className="scroll-slim min-h-0 flex-1 overflow-auto">
+              <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b bg-background/95 px-3 py-2 backdrop-blur">
+                <p className="truncate text-xs text-muted-foreground">
+                  {project.place_tree_updated_at
+                    ? `Updated ${new Date(project.place_tree_updated_at).toLocaleTimeString()}`
+                    : "Never synced"}
+                  {status === "connected" ? " · live" : ""}
+                </p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={() =>
+                    dispatch.mutate({ type: "get_tree", payload: {}, label: "refresh Explorer" })
+                  }
+                >
+                  <RefreshCw className="size-3.5" /> Refresh
+                </Button>
+              </div>
               <ExplorerTree
                 tree={project.place_tree}
                 onSelect={(path) => setInput((value) => `${value}${value ? " " : ""}@${path} `)}
               />
             </TabsContent>
+
 
             <TabsContent value="activity" className="scroll-slim min-h-0 flex-1 overflow-auto px-4 pb-6">
               {(commandsQuery.data ?? []).length === 0 ? (

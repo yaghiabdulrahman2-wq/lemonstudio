@@ -106,12 +106,11 @@ function Dashboard() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const projects = projectsQuery.data;
+  const projects = projectsQuery.data ?? [];
   const filtered = useMemo(() => {
-    const list = projects ?? [];
     const term = search.trim().toLowerCase();
-    if (!term) return list;
-    return list.filter(
+    if (!term) return projects;
+    return projects.filter(
       (project) =>
         project.name.toLowerCase().includes(term) ||
         project.description.toLowerCase().includes(term) ||

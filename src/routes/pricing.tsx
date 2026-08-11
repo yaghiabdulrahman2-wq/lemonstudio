@@ -11,7 +11,8 @@ export const Route = createFileRoute("/pricing")({
       { title: "Pricing — Lemonade Studio" },
       {
         name: "description",
-        content: "Free tier with daily prompts, or Pro for unlimited AI builds inside Roblox Studio.",
+        content:
+          "Free tier with daily prompts, or Pro for unlimited AI builds inside Roblox Studio.",
       },
       { property: "og:title", content: "Pricing — Lemonade Studio" },
       { property: "og:description", content: "Free and Pro plans for Lemonade Studio." },
@@ -74,7 +75,11 @@ function Pricing() {
                 </li>
               ))}
             </ul>
-            <Button asChild className="mt-6 w-full" variant={tier.highlight ? "default" : "outline"}>
+            <Button
+              asChild
+              className="mt-6 w-full"
+              variant={tier.highlight ? "default" : "outline"}
+            >
               <Link to="/dashboard">Get started</Link>
             </Button>
           </Card>

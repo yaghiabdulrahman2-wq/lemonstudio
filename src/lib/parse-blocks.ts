@@ -31,8 +31,6 @@ export type TextSegment = { kind: "text"; id: string; text: string };
 
 export type Segment = TextSegment | ScriptBlock | BuildBlock | TerrainBlock;
 
-const FENCE = /```([^\n]*)\n([\s\S]*?)(?:```|$)/g;
-
 function parseMeta(info: string): { lang: string; meta: Record<string, string> } {
   const parts = info.trim().split(/\s+/).filter(Boolean);
   const lang = (parts.shift() ?? "").toLowerCase();
@@ -61,8 +59,8 @@ export function parseSegments(content: string): Segment[] {
   let cursor = 0;
   let index = 0;
 
-  FENCE.lastIndex = 0;
-  let match = FENCE.exec(content);
+  const fence = /```([^\n]*)\n([\s\S]*?)(?:```|$)/g;
+  let match = fence.exec(content);
   while (match !== null) {
     if (match.index > cursor) {
       const text = content.slice(cursor, match.index);
@@ -108,7 +106,7 @@ export function parseSegments(content: string): Segment[] {
     }
 
     cursor = match.index + match[0].length;
-    match = FENCE.exec(content);
+    match = fence.exec(content);
   }
 
   if (cursor < content.length) {

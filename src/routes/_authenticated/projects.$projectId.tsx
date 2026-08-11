@@ -18,9 +18,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { CodeBlock } from "@/components/code-block";
-import { ExplorerTree, collectScripts, type TreeNode } from "@/components/explorer-tree";
+import { ExplorerTree, type TreeNode } from "@/components/explorer-tree";
 import { Markdown } from "@/components/markdown";
 import { PluginSetupPanel } from "@/components/plugin-setup";
+import { collectScripts } from "@/lib/explorer-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -69,7 +70,12 @@ type ProjectRow = {
   smart_mode: boolean;
 };
 
-type ChatMessage = { id: string; role: "user" | "assistant"; content: string; attachments: string[] };
+type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  attachments: string[];
+};
 
 function ProjectWorkspace() {
   const { projectId } = Route.useParams();
@@ -100,7 +106,6 @@ function ProjectWorkspace() {
     retry: 1,
     refetchInterval: 4000,
   });
-
 
   const messagesQuery = useQuery({
     queryKey: ["messages", projectId],
@@ -159,7 +164,11 @@ function ProjectWorkspace() {
   }, [status, user, projectId]);
 
   const dispatch = useMutation({
-    mutationFn: async (args: { type: Parameters<typeof queueCommand>[2]; payload: Record<string, unknown>; label: string }) => {
+    mutationFn: async (args: {
+      type: Parameters<typeof queueCommand>[2];
+      payload: Record<string, unknown>;
+      label: string;
+    }) => {
       if (!user) throw new Error("Not signed in");
       await queueCommand(projectId, user.id, args.type, args.payload);
       return args.label;
@@ -177,7 +186,11 @@ function ProjectWorkspace() {
 
   const segmentCommand = (
     segment: Segment,
-  ): { type: Parameters<typeof queueCommand>[2]; payload: Record<string, unknown>; label: string } | null => {
+  ): {
+    type: Parameters<typeof queueCommand>[2];
+    payload: Record<string, unknown>;
+    label: string;
+  } | null => {
     if (segment.kind === "script" && segment.applyable) {
       return {
         type: "create_script",
@@ -311,9 +324,13 @@ function ProjectWorkspace() {
       },
     ];
 
-    const { error: insertError } = await supabase
-      .from("messages")
-      .insert({ project_id: projectId, user_id: user.id, role: "user", content: text || "(image)", attachments: uploaded });
+    const { error: insertError } = await supabase.from("messages").insert({
+      project_id: projectId,
+      user_id: user.id,
+      role: "user",
+      content: text || "(image)",
+      attachments: uploaded,
+    });
     if (insertError) {
       setStreaming(false);
       toast.error(insertError.message);
@@ -375,9 +392,12 @@ function ProjectWorkspace() {
       }
 
       if (assistant.trim()) {
-        await supabase
-          .from("messages")
-          .insert({ project_id: projectId, user_id: user.id, role: "assistant", content: assistant });
+        await supabase.from("messages").insert({
+          project_id: projectId,
+          user_id: user.id,
+          role: "assistant",
+          content: assistant,
+        });
         if (autoApply) await autoApplyAll(assistant);
       }
     } catch (error) {
@@ -412,7 +432,6 @@ function ProjectWorkspace() {
       </div>
     );
   }
-
 
   const statusBadge =
     status === "connected"
@@ -607,7 +626,11 @@ function ProjectWorkspace() {
                 }
                 className="min-h-[3rem] resize-none"
               />
-              <Button onClick={() => void send()} disabled={streaming || (!input.trim() && images.length === 0)} size="icon">
+              <Button
+                onClick={() => void send()}
+                disabled={streaming || (!input.trim() && images.length === 0)}
+                size="icon"
+              >
                 {streaming ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
@@ -626,7 +649,10 @@ function ProjectWorkspace() {
               <TabsTrigger value="activity">Activity</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="connect" className="scroll-slim min-h-0 flex-1 overflow-auto px-4 pb-6">
+            <TabsContent
+              value="connect"
+              className="scroll-slim min-h-0 flex-1 overflow-auto px-4 pb-6"
+            >
               <PluginSetupPanel token={project.connection_token} />
 
               <Card className="mt-4 space-y-2 bg-surface/60 p-3 text-xs text-muted-foreground">
@@ -643,7 +669,6 @@ function ProjectWorkspace() {
                     : "never"}
                 </p>
               </Card>
-
 
               <div className="mt-4 grid gap-2">
                 <Button
@@ -702,8 +727,10 @@ function ProjectWorkspace() {
               />
             </TabsContent>
 
-
-            <TabsContent value="activity" className="scroll-slim min-h-0 flex-1 overflow-auto px-4 pb-6">
+            <TabsContent
+              value="activity"
+              className="scroll-slim min-h-0 flex-1 overflow-auto px-4 pb-6"
+            >
               {(commandsQuery.data ?? []).length === 0 ? (
                 <p className="text-xs text-muted-foreground">No commands sent yet.</p>
               ) : (
@@ -781,7 +808,12 @@ function AssistantMessage({
               subtitle={segment.className}
               actions={
                 segment.applyable ? (
-                  <Button size="sm" className="h-7 gap-1.5 px-2 text-xs" disabled={applying} onClick={() => onApply(segment)}>
+                  <Button
+                    size="sm"
+                    className="h-7 gap-1.5 px-2 text-xs"
+                    disabled={applying}
+                    onClick={() => onApply(segment)}
+                  >
                     <Upload className="size-3.5" /> Apply to Studio
                   </Button>
                 ) : null
@@ -800,7 +832,12 @@ function AssistantMessage({
               subtitle={`${segment.tree.length} root node(s) → ${segment.parentPath}`}
               actions={
                 segment.valid ? (
-                  <Button size="sm" className="h-7 gap-1.5 px-2 text-xs" disabled={applying} onClick={() => onApply(segment)}>
+                  <Button
+                    size="sm"
+                    className="h-7 gap-1.5 px-2 text-xs"
+                    disabled={applying}
+                    onClick={() => onApply(segment)}
+                  >
                     <Hammer className="size-3.5" /> Build in Studio
                   </Button>
                 ) : null
@@ -818,7 +855,12 @@ function AssistantMessage({
             subtitle={`${segment.regions.length} region(s)`}
             actions={
               segment.valid ? (
-                <Button size="sm" className="h-7 gap-1.5 px-2 text-xs" disabled={applying} onClick={() => onApply(segment)}>
+                <Button
+                  size="sm"
+                  className="h-7 gap-1.5 px-2 text-xs"
+                  disabled={applying}
+                  onClick={() => onApply(segment)}
+                >
                   <Mountain className="size-3.5" /> Generate terrain
                 </Button>
               ) : null
@@ -833,9 +875,14 @@ function AssistantMessage({
 /** Resolves private storage paths to short-lived signed URLs for display. */
 function MessageImages({ paths }: { paths: string[] }) {
   const [urls, setUrls] = useState<string[]>([]);
+  const pathKey = paths.join("|");
 
   useEffect(() => {
     let active = true;
+    if (paths.length === 0) {
+      setUrls([]);
+      return;
+    }
     void supabase.storage
       .from("chat-images")
       .createSignedUrls(paths, 3600)
@@ -846,7 +893,7 @@ function MessageImages({ paths }: { paths: string[] }) {
     return () => {
       active = false;
     };
-  }, [paths.join("|")]);
+  }, [pathKey, paths]);
 
   if (urls.length === 0) return null;
   return (

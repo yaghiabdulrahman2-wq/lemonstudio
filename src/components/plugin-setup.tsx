@@ -60,9 +60,7 @@ export function PluginSetupPanel({ token }: { token: string }) {
     <div className="space-y-4">
       <div>
         <h3 className="text-sm font-semibold">Connect to Studio</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          One download, one paste. No guessing.
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">One download, one paste. No guessing.</p>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">
@@ -82,7 +80,12 @@ export function PluginSetupPanel({ token }: { token: string }) {
       <div>
         <Label className="text-xs">Connection token</Label>
         <div className="mt-1.5 flex gap-2">
-          <Input readOnly value={token} className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
+          <Input
+            readOnly
+            value={token}
+            className="font-mono text-xs"
+            onFocus={(e) => e.currentTarget.select()}
+          />
           <Button
             size="icon"
             variant="outline"

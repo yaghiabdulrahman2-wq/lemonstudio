@@ -96,8 +96,14 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { title: "Create a project", body: "One project per Roblox place. It gets its own connection token." },
-  { title: "Install the plugin", body: "Copy the generated Lua, save it as a local plugin, paste the token." },
+  {
+    title: "Create a project",
+    body: "One project per Roblox place. It gets its own connection token.",
+  },
+  {
+    title: "Install the plugin",
+    body: "Copy the generated Lua, save it as a local plugin, paste the token.",
+  },
   { title: "Ship", body: "Chat, hit Apply to Studio, watch instances appear in your open place." },
 ];
 

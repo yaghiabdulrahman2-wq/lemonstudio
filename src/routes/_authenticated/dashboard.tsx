@@ -69,7 +69,9 @@ function Dashboard() {
     queryFn: async (): Promise<ProjectRow[]> => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, description, place_id, place_name, tags, plugin_last_seen_at, updated_at")
+        .select(
+          "id, name, description, place_id, place_name, tags, plugin_last_seen_at, updated_at",
+        )
         .order("updated_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data ?? []) as ProjectRow[];
@@ -104,11 +106,12 @@ function Dashboard() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const projects = projectsQuery.data ?? [];
+  const projects = projectsQuery.data;
   const filtered = useMemo(() => {
+    const list = projects ?? [];
     const term = search.trim().toLowerCase();
-    if (!term) return projects;
-    return projects.filter(
+    if (!term) return list;
+    return list.filter(
       (project) =>
         project.name.toLowerCase().includes(term) ||
         project.description.toLowerCase().includes(term) ||

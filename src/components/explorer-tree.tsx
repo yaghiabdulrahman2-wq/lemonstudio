@@ -1,14 +1,10 @@
 import { ChevronRight, FileCode, Folder, Box } from "lucide-react";
 import { useState } from "react";
 
+import { type TreeNode } from "@/lib/explorer-utils";
 import { cn } from "@/lib/utils";
 
-export type TreeNode = {
-  name: string;
-  className: string;
-  children?: TreeNode[];
-  lines?: number;
-};
+export type { TreeNode };
 
 function iconFor(className: string) {
   if (className.includes("Script")) return FileCode;
@@ -94,22 +90,4 @@ export function ExplorerTree({
       ))}
     </div>
   );
-}
-
-/** Flattens the tree into script paths for @mention autocomplete. */
-export function collectScripts(
-  tree: { children?: TreeNode[] } | null,
-): { path: string; name: string; className: string; lines?: number | undefined }[] {
-  const out: { path: string; name: string; className: string; lines?: number | undefined }[] = [];
-  const walk = (nodes: TreeNode[] | undefined, prefix: string) => {
-    for (const node of nodes ?? []) {
-      const path = prefix ? `${prefix}/${node.name}` : node.name;
-      if (node.className.includes("Script")) {
-        out.push({ path, name: node.name, className: node.className, lines: node.lines });
-      }
-      walk(node.children, path);
-    }
-  };
-  walk(tree?.children, "");
-  return out;
 }

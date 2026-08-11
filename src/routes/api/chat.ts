@@ -3,8 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BUILD_MODE_PROMPT, SMART_MODE_PROMPT, SYSTEM_PROMPT_BASE } from "@/lib/system-prompt";
 
 type ContentPart =
-  | { type: "text"; text: string }
-  | { type: "image_url"; image_url: { url: string } };
+  { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
 
 type ChatMessage = { role: "user" | "assistant"; content: string | ContentPart[] };
 

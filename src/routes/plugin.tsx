@@ -18,7 +18,10 @@ export const Route = createFileRoute("/plugin")({
           "Install the Lemonade companion plugin so the AI can create scripts, models and terrain inside your open Roblox place.",
       },
       { property: "og:title", content: "Studio plugin — Lemonade Studio" },
-      { property: "og:description", content: "Install the Lemonade companion Roblox Studio plugin." },
+      {
+        property: "og:description",
+        content: "Install the Lemonade companion Roblox Studio plugin.",
+      },
     ],
   }),
   component: PluginPage,
@@ -81,11 +84,7 @@ function PluginPage() {
       </Card>
 
       <div className="mt-8">
-        <CodeBlock
-          code={source}
-          title="LemonadeStudio.server.lua"
-          subtitle={`server: ${origin}`}
-        />
+        <CodeBlock code={source} title="LemonadeStudio.server.lua" subtitle={`server: ${origin}`} />
       </div>
     </div>
   );

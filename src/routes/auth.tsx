@@ -91,8 +91,8 @@ function AuthPage() {
           <Card className="p-6">
             <h1 className="text-center text-lg font-semibold">Lemonade Studio account</h1>
             <p className="mt-1 text-center text-sm text-muted-foreground">
-              Optional — an account keeps your projects on every device. Anything you built
-              already comes with you.
+              Optional — an account keeps your projects on every device. Anything you built already
+              comes with you.
             </p>
 
             <Tabs

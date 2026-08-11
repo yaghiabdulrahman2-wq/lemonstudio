@@ -3,7 +3,9 @@
 Build a complete, production-ready full-stack web application called **Lemonade Studio** (or "LemonAI" – pick the cleaner name) — an advanced AI-powered Roblox development platform inspired by Lemonade AI.
 
 ### Core Vision
+
 A beautiful, modern web dashboard that lets Roblox creators:
+
 - Chat with a highly intelligent AI agent
 - Generate, edit, debug, and optimize Luau scripts
 - Generate and modify maps, terrain, models, and assets
@@ -80,6 +82,7 @@ The AI must feel extremely smart, context-aware, and proactive about fixing bugs
 ### Technical Requirements
 
 **Frontend**
+
 - Next.js 14/15 (App Router)
 - TypeScript
 - Tailwind CSS + shadcn/ui (or similar high-quality component library)
@@ -90,6 +93,7 @@ The AI must feel extremely smart, context-aware, and proactive about fixing bugs
 - Code highlighting with Shiki or Prism (Luau support)
 
 **Backend**
+
 - Next.js API routes or separate NestJS / Hono backend
 - Database: PostgreSQL via Supabase or Neon (projects, conversations, users, generated assets)
 - Authentication: Clerk or NextAuth + Roblox OAuth simulation
@@ -97,12 +101,14 @@ The AI must feel extremely smart, context-aware, and proactive about fixing bugs
 - WebSocket or Server-Sent Events for real-time status updates
 
 **AI Integration**
+
 - Use a powerful model (Claude 3.5/4, GPT-4o, or Grok) via API
 - System prompt that makes the AI an expert Roblox engineer
 - Tool calling so the AI can request "get current Explorer tree", "apply this script", "create these instances", etc.
 - Structured outputs for scripts and instance hierarchies
 
 **Roblox Side**
+
 - Generate a clean Studio plugin that:
   - Listens for commands from the web app
   - Can create/edit scripts
@@ -111,6 +117,7 @@ The AI must feel extremely smart, context-aware, and proactive about fixing bugs
   - Has a simple status UI inside Studio
 
 ### Design Requirements
+
 - Extremely polished, modern developer tool aesthetic
 - Dark mode first (deep charcoal / near-black backgrounds, subtle purple/blue accents)
 - Clean typography (Inter or Geist)
@@ -120,6 +127,7 @@ The AI must feel extremely smart, context-aware, and proactive about fixing bugs
 - Toast notifications for success/error when applying to Studio
 
 ### Non-Negotiables for Quality
+
 - Zero placeholder "TODO" comments left in the final code
 - Proper error handling everywhere
 - Type-safe TypeScript
@@ -129,6 +137,7 @@ The AI must feel extremely smart, context-aware, and proactive about fixing bugs
 - The AI system prompt must be excellent and focused on high-quality Roblox development
 
 ### What to Build First (Implementation Order)
+
 1. Landing page + Auth + Project dashboard
 2. Chat interface with streaming
 3. Project creation and mock Studio connection
@@ -140,7 +149,7 @@ The AI must feel extremely smart, context-aware, and proactive about fixing bugs
 Make the entire experience feel like a professional tool that serious Roblox developers would actually want to use every day. Prioritize cleanliness, speed, and intelligence of the AI over flashy gimmicks.
 
 Start by scaffolding the full application structure, then implement the core chat + project system first.
- 
+
 The current website is completely useless. It just generates text and yaps in the chat but does NOTHING in Roblox Studio. There is zero real connection.
 
 I need you to completely implement a working connection system using a Roblox Studio plugin. This is the #1 priority right now.

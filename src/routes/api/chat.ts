@@ -13,7 +13,7 @@ type ChatRequest = {
   connected?: boolean;
 };
 
-const MODEL = "google/gemini-3.6-pro";
+const MODEL = "google/gemini-3.1-pro-preview";
 
 function summariseTree(tree: unknown): string {
   if (!tree) return "The place is not synced yet — no Explorer tree available.";

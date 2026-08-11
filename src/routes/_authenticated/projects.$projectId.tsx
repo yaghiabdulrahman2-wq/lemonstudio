@@ -11,6 +11,8 @@ import {
   Sparkles,
   Undo2,
   Upload,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -67,7 +69,7 @@ type ProjectRow = {
   smart_mode: boolean;
 };
 
-type ChatMessage = { id: string; role: "user" | "assistant"; content: string };
+type ChatMessage = { id: string; role: "user" | "assistant"; content: string; attachments: string[] };
 
 function ProjectWorkspace() {
   const { projectId } = Route.useParams();
@@ -79,6 +81,8 @@ function ProjectWorkspace() {
   const [draft, setDraft] = useState("");
   const [buildMode, setBuildMode] = useState(false);
   const [autoApply, setAutoApply] = useState(true);
+  const [images, setImages] = useState<{ name: string; dataUrl: string }[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -103,12 +107,16 @@ function ProjectWorkspace() {
     queryFn: async (): Promise<ChatMessage[]> => {
       const { data, error } = await supabase
         .from("messages")
-        .select("id, role, content")
+        .select("id, role, content, attachments")
         .eq("project_id", projectId)
         .order("created_at", { ascending: true });
       if (error) throw new Error(error.message);
-      return (data ?? []) as ChatMessage[];
+      return ((data ?? []) as unknown as ChatMessage[]).map((m) => ({
+        ...m,
+        attachments: Array.isArray(m.attachments) ? m.attachments : [],
+      }));
     },
+    refetchInterval: 5000,
   });
 
   const commandsQuery = useQuery({
@@ -138,6 +146,17 @@ function ProjectWorkspace() {
   useEffect(() => {
     inputRef.current?.focus();
   }, [projectId, streaming]);
+
+  // Keep the Explorer panel live while the plugin is connected.
+  useEffect(() => {
+    if (status !== "connected" || !user) return;
+    const tick = () => {
+      void queueCommand(projectId, user.id, "get_tree", {}).catch(() => undefined);
+    };
+    tick();
+    const id = window.setInterval(tick, 15000);
+    return () => window.clearInterval(id);
+  }, [status, user, projectId]);
 
   const dispatch = useMutation({
     mutationFn: async (args: { type: Parameters<typeof queueCommand>[2]; payload: Record<string, unknown>; label: string }) => {
@@ -252,20 +271,49 @@ function ProjectWorkspace() {
 
   const send = async () => {
     const text = input.trim();
-    if (!text || streaming || !user || !project) return;
+    if ((!text && images.length === 0) || streaming || !user || !project) return;
 
+    const pendingImages = images;
     setInput("");
+    setImages([]);
     setStreaming(true);
     setDraft("");
 
-    const history = [...messages.map((m) => ({ role: m.role, content: m.content })), {
-      role: "user" as const,
-      content: text,
-    }];
+    const uploaded: string[] = [];
+    for (const image of pendingImages) {
+      try {
+        const blob = await (await fetch(image.dataUrl)).blob();
+        const path = `${user.id}/${projectId}/${crypto.randomUUID()}-${image.name.replace(/[^\w.-]/g, "_")}`;
+        const { error: uploadError } = await supabase.storage
+          .from("chat-images")
+          .upload(path, blob, { contentType: blob.type || "image/png" });
+        if (uploadError) throw new Error(uploadError.message);
+        uploaded.push(path);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Image upload failed.");
+      }
+    }
+
+    const history = [
+      ...messages.map((m) => ({ role: m.role, content: m.content })),
+      {
+        role: "user" as const,
+        content:
+          pendingImages.length > 0
+            ? [
+                { type: "text" as const, text: text || "Look at these image(s)." },
+                ...pendingImages.map((image) => ({
+                  type: "image_url" as const,
+                  image_url: { url: image.dataUrl },
+                })),
+              ]
+            : text,
+      },
+    ];
 
     const { error: insertError } = await supabase
       .from("messages")
-      .insert({ project_id: projectId, user_id: user.id, role: "user", content: text });
+      .insert({ project_id: projectId, user_id: user.id, role: "user", content: text || "(image)", attachments: uploaded });
     if (insertError) {
       setStreaming(false);
       toast.error(insertError.message);
@@ -432,8 +480,13 @@ function ProjectWorkspace() {
             {messages.map((message) =>
               message.role === "user" ? (
                 <div key={message.id} className="flex justify-end">
-                  <div className="max-w-[80%] rounded-2xl bg-primary px-4 py-2.5 text-sm text-primary-foreground">
-                    {message.content}
+                  <div className="max-w-[80%] space-y-2">
+                    {message.attachments.length > 0 ? (
+                      <MessageImages paths={message.attachments} />
+                    ) : null}
+                    <div className="rounded-2xl bg-primary px-4 py-2.5 text-sm text-primary-foreground">
+                      {message.content}
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -484,7 +537,60 @@ function ProjectWorkspace() {
                 </span>
               ) : null}
             </div>
+            {images.length > 0 ? (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {images.map((image, index) => (
+                  <div key={`${image.name}-${index}`} className="relative">
+                    <img
+                      src={image.dataUrl}
+                      alt={image.name}
+                      className="size-16 rounded-md border object-cover"
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Remove ${image.name}`}
+                      onClick={() => setImages((list) => list.filter((_, i) => i !== index))}
+                      className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full border bg-surface-2 text-xs"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={async (event) => {
+                const files = Array.from(event.target.files ?? []);
+                event.target.value = "";
+                for (const file of files) {
+                  if (file.size > 6 * 1024 * 1024) {
+                    toast.error(`${file.name} is over 6 MB.`);
+                    continue;
+                  }
+                  const dataUrl = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(String(reader.result));
+                    reader.onerror = () => reject(new Error("Could not read that file."));
+                    reader.readAsDataURL(file);
+                  });
+                  setImages((list) => [...list, { name: file.name, dataUrl }]);
+                }
+              }}
+            />
             <div className="flex items-end gap-2">
+              <Button
+                size="icon"
+                variant="outline"
+                aria-label="Attach image"
+                onClick={() => fileRef.current?.click()}
+              >
+                <ImagePlus className="size-4" />
+              </Button>
               <Textarea
                 ref={inputRef}
                 value={input}
@@ -501,7 +607,7 @@ function ProjectWorkspace() {
                 }
                 className="min-h-[3rem] resize-none"
               />
-              <Button onClick={() => void send()} disabled={streaming || !input.trim()} size="icon">
+              <Button onClick={() => void send()} disabled={streaming || (!input.trim() && images.length === 0)} size="icon">
                 {streaming ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
@@ -720,6 +826,39 @@ function AssistantMessage({
           />
         );
       })}
+    </div>
+  );
+}
+
+/** Resolves private storage paths to short-lived signed URLs for display. */
+function MessageImages({ paths }: { paths: string[] }) {
+  const [urls, setUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    void supabase.storage
+      .from("chat-images")
+      .createSignedUrls(paths, 3600)
+      .then(({ data }) => {
+        if (!active) return;
+        setUrls((data ?? []).map((item) => item.signedUrl).filter(Boolean) as string[]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [paths.join("|")]);
+
+  if (urls.length === 0) return null;
+  return (
+    <div className="flex flex-wrap justify-end gap-2">
+      {urls.map((url) => (
+        <img
+          key={url}
+          src={url}
+          alt="Attached reference"
+          className="max-h-48 rounded-lg border object-cover"
+        />
+      ))}
     </div>
   );
 }

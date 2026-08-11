@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
@@ -6,14 +6,16 @@ import type { Session, User } from "@supabase/supabase-js";
 let bootstrapping: Promise<unknown> | null = null;
 
 /**
- * No sign-in screen: every visitor gets a silent anonymous session so their
- * projects, chats and Studio commands are scoped to them automatically.
+ * Sign-in is optional: every visitor gets a silent anonymous session so their
+ * projects work immediately, and they can upgrade it to a real account (email +
+ * password) at any point without losing anything.
  */
 async function ensureSession() {
   const { data } = await supabase.auth.getSession();
   if (data.session) return data.session;
   if (!bootstrapping) bootstrapping = supabase.auth.signInAnonymously();
   await bootstrapping;
+  bootstrapping = null;
   const { data: after } = await supabase.auth.getSession();
   return after.session;
 }
@@ -46,5 +48,48 @@ export function useAuth() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  return { session, user, loading, error };
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setLoading(true);
+    const next = await ensureSession();
+    setSession(next ?? null);
+    setUser(next?.user ?? null);
+    setLoading(false);
+  }, []);
+
+  const isAnonymous = Boolean(user?.is_anonymous ?? !user?.email);
+
+  return { session, user, loading, error, isAnonymous, email: user?.email ?? null, signOut };
+}
+
+/** Signs into an existing account. */
+export async function signInWithPassword(email: string, password: string) {
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Creates an account. When the visitor is currently on an anonymous session we
+ * upgrade that session in place so their existing projects stay theirs.
+ */
+export async function createAccount(email: string, password: string) {
+  const { data } = await supabase.auth.getSession();
+  const current = data.session?.user;
+
+  if (current?.is_anonymous) {
+    const { error } = await supabase.auth.updateUser({ email, password });
+    if (!error) return;
+    // Email already taken (or upgrade unavailable) — fall through to a fresh account.
+    if (!/registered|exists|taken/i.test(error.message)) throw new Error(error.message);
+    throw new Error("That email already has an account — use Sign in instead.");
+  }
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+  });
+  if (error) throw new Error(error.message);
 }

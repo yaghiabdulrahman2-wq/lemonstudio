@@ -418,8 +418,12 @@ handlers["create_script"] = function(payload)
 
 	local existing = parent:FindFirstChild(name)
 	local target: Instance
+	local previousSource: string? = nil
+	local reused = false
 	if existing and existing:IsA("LuaSourceContainer") and existing.ClassName == className then
 		target = existing
+		reused = true
+		previousSource = (existing :: any).Source
 	else
 		target = Instance.new(className)
 		target.Name = name
@@ -427,7 +431,11 @@ handlers["create_script"] = function(payload)
 	end
 	;(target :: any).Source = payload.source or ""
 	Selection:Set({ target })
-	return { path = target:GetFullName(), created = existing == nil }
+	return {
+		path = target:GetFullName(),
+		created = not reused,
+		previousSource = previousSource,
+	}
 end
 
 handlers["update_script"] = function(payload)
@@ -435,9 +443,10 @@ handlers["update_script"] = function(payload)
 	if not target or not target:IsA("LuaSourceContainer") then
 		error("Script not found: " .. tostring(payload.path))
 	end
+	local previousSource = (target :: any).Source
 	;(target :: any).Source = payload.source or ""
 	Selection:Set({ target })
-	return { path = target:GetFullName() }
+	return { path = target:GetFullName(), previousSource = previousSource }
 end
 
 handlers["build_instances"] = function(payload)

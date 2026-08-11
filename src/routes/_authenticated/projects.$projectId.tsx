@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Send,
   Sparkles,
+  Undo2,
   Upload,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -29,7 +30,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { connectionState, queueCommand, type CommandRow } from "@/lib/commands";
+import {
+  connectionState,
+  queueCommand,
+  revertCommand,
+  revertPlan,
+  type CommandRow,
+} from "@/lib/commands";
 import { parseSegments, type Segment } from "@/lib/parse-blocks";
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
@@ -71,6 +78,7 @@ function ProjectWorkspace() {
   const [streaming, setStreaming] = useState(false);
   const [draft, setDraft] = useState("");
   const [buildMode, setBuildMode] = useState(false);
+  const [autoApply, setAutoApply] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -144,6 +152,73 @@ function ProjectWorkspace() {
           ? `Sent to Studio: ${label}`
           : `Queued: ${label} — it runs as soon as the plugin connects`,
       );
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const segmentCommand = (
+    segment: Segment,
+  ): { type: Parameters<typeof queueCommand>[2]; payload: Record<string, unknown>; label: string } | null => {
+    if (segment.kind === "script" && segment.applyable) {
+      return {
+        type: "create_script",
+        payload: {
+          parent: segment.parentPath,
+          name: segment.name,
+          className: segment.className,
+          source: segment.code,
+        },
+        label: `${segment.className} ${segment.name}`,
+      };
+    }
+    if (segment.kind === "build" && segment.valid) {
+      return {
+        type: "build_instances",
+        payload: { parent: segment.parentPath, tree: segment.tree },
+        label: `${segment.name} → ${segment.parentPath}`,
+      };
+    }
+    if (segment.kind === "terrain" && segment.valid) {
+      return {
+        type: "terrain_fill",
+        payload: { regions: segment.regions },
+        label: `${segment.regions.length} terrain region(s)`,
+      };
+    }
+    return null;
+  };
+
+  const autoApplyAll = async (content: string) => {
+    if (!user) return;
+    const jobs = parseSegments(content)
+      .map(segmentCommand)
+      .filter((job): job is NonNullable<typeof job> => job !== null);
+    if (jobs.length === 0) return;
+
+    for (const job of jobs) {
+      try {
+        await queueCommand(projectId, user.id, job.type, job.payload);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Could not send to Studio.");
+        return;
+      }
+    }
+    void queryClient.invalidateQueries({ queryKey: ["commands", projectId] });
+    toast.success(
+      status === "connected"
+        ? `Applied ${jobs.length} change(s) in Studio`
+        : `Queued ${jobs.length} change(s) — they run when the plugin connects`,
+    );
+  };
+
+  const revert = useMutation({
+    mutationFn: async (command: CommandRow) => {
+      if (!user) throw new Error("Not signed in");
+      return revertCommand(projectId, user.id, command);
+    },
+    onSuccess: (label) => {
+      void queryClient.invalidateQueries({ queryKey: ["commands", projectId] });
+      toast.success(`Reverting: ${label}`);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -255,6 +330,7 @@ function ProjectWorkspace() {
         await supabase
           .from("messages")
           .insert({ project_id: projectId, user_id: user.id, role: "assistant", content: assistant });
+        if (autoApply) await autoApplyAll(assistant);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Something went wrong.");
@@ -398,6 +474,10 @@ function ProjectWorkspace() {
                 <Switch checked={buildMode} onCheckedChange={setBuildMode} />
                 <span className="text-muted-foreground">Build Mode</span>
               </label>
+              <label className="flex items-center gap-2">
+                <Switch checked={autoApply} onCheckedChange={setAutoApply} />
+                <span className="text-muted-foreground">Auto-apply to Studio</span>
+              </label>
               {scripts.length > 0 ? (
                 <span className="text-muted-foreground">
                   {scripts.length} scripts in context · type @ to reference
@@ -523,9 +603,22 @@ function ProjectWorkspace() {
                       {command.error ? (
                         <p className="mt-1 break-words text-destructive">{command.error}</p>
                       ) : null}
-                      <p className="mt-1 text-muted-foreground">
-                        {new Date(command.created_at).toLocaleTimeString()}
-                      </p>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <p className="text-muted-foreground">
+                          {new Date(command.created_at).toLocaleTimeString()}
+                        </p>
+                        {revertPlan(command) ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 gap-1 px-1.5 text-xs"
+                            disabled={revert.isPending}
+                            onClick={() => revert.mutate(command)}
+                          >
+                            <Undo2 className="size-3" /> Revert
+                          </Button>
+                        ) : null}
+                      </div>
                     </li>
                   ))}
                 </ul>

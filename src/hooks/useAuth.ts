@@ -70,6 +70,21 @@ export async function signInWithPassword(email: string, password: string) {
   if (error) throw new Error(error.message);
 }
 
+/** Emails a password reset link that lands on /reset-password. */
+export async function sendPasswordReset(email: string) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Sets a new password for the session created by the reset link. */
+export async function updatePassword(password: string) {
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw new Error(error.message);
+}
+
+
 /**
  * Creates an account. When the visitor is currently on an anonymous session we
  * upgrade that session in place so their existing projects stay theirs.

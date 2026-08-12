@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as PluginRouteImport } from './routes/plugin'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated/projects.$projectId'
@@ -50,6 +51,11 @@ const PluginRoute = PluginRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/plugin': typeof PluginRoute
   '/pricing': typeof PricingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/api/chat': typeof ApiChatRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/plugin': typeof PluginRoute
   '/pricing': typeof PricingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/api/chat': typeof ApiChatRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/plugin': typeof PluginRoute
   '/pricing': typeof PricingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/plugin'
     | '/pricing'
+    | '/reset-password'
     | '/dashboard'
     | '/api/chat'
     | '/projects/$projectId'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/plugin'
     | '/pricing'
+    | '/reset-password'
     | '/dashboard'
     | '/api/chat'
     | '/projects/$projectId'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/plugin'
     | '/pricing'
+    | '/reset-password'
     | '/_authenticated/dashboard'
     | '/api/chat'
     | '/_authenticated/projects/$projectId'
@@ -186,6 +198,7 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   PluginRoute: typeof PluginRoute
   PricingRoute: typeof PricingRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiPublicPluginConnectRoute: typeof ApiPublicPluginConnectRoute
   ApiPublicPluginPollRoute: typeof ApiPublicPluginPollRoute
@@ -235,6 +248,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard': {
@@ -310,6 +330,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   PluginRoute: PluginRoute,
   PricingRoute: PricingRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ApiChatRoute: ApiChatRoute,
   ApiPublicPluginConnectRoute: ApiPublicPluginConnectRoute,
   ApiPublicPluginPollRoute: ApiPublicPluginPollRoute,
@@ -319,13 +340,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
+  AlertTriangle,
   Blocks,
   Hammer,
   Loader2,
@@ -21,12 +22,10 @@ import { CodeBlock } from "@/components/code-block";
 import { ExplorerTree, type TreeNode } from "@/components/explorer-tree";
 import { Markdown } from "@/components/markdown";
 import { PluginSetupPanel } from "@/components/plugin-setup";
-import { collectScripts } from "@/lib/explorer-utils";
+import { collectScripts, diffTrees } from "@/lib/explorer-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,6 +40,7 @@ import {
   type CommandRow,
 } from "@/lib/commands";
 import { parseSegments, type Segment } from "@/lib/parse-blocks";
+
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
   head: () => ({
@@ -88,6 +88,8 @@ function ProjectWorkspace() {
   const [buildMode, setBuildMode] = useState(false);
   const [autoApply, setAutoApply] = useState(true);
   const [images, setImages] = useState<{ name: string; dataUrl: string }[]>([]);
+  const [serviceIssue, setServiceIssue] = useState<{ title: string; detail: string } | null>(null);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -152,16 +154,39 @@ function ProjectWorkspace() {
     inputRef.current?.focus();
   }, [projectId, streaming]);
 
-  // Keep the Explorer panel live while the plugin is connected.
+  // The plugin pushes the hierarchy whenever the place changes, so we only ask
+  // for a snapshot once — the moment a plugin connects.
+  const requestedTreeFor = useRef<string | null>(null);
   useEffect(() => {
     if (status !== "connected" || !user) return;
-    const tick = () => {
-      void queueCommand(projectId, user.id, "get_tree", {}).catch(() => undefined);
-    };
-    tick();
-    const id = window.setInterval(tick, 15000);
-    return () => window.clearInterval(id);
-  }, [status, user, projectId]);
+    const key = `${projectId}:${project?.plugin_last_seen_at ? "on" : "off"}`;
+    if (requestedTreeFor.current === key) return;
+    requestedTreeFor.current = key;
+    void queueCommand(projectId, user.id, "get_tree", {}).catch(() => undefined);
+  }, [status, user, projectId, project?.plugin_last_seen_at]);
+
+  useEffect(() => {
+    if (status === "disconnected") requestedTreeFor.current = null;
+  }, [status]);
+
+  // Instant diff: highlight nodes that appeared since the previous snapshot.
+  const treeStamp = project?.place_tree_updated_at ?? null;
+  const previousTree = useRef<{ children?: TreeNode[] } | null>(null);
+  const previousStamp = useRef<string | null>(null);
+  const [treeDiff, setTreeDiff] = useState<{ added: Set<string>; removedCount: number }>({
+    added: new Set(),
+    removedCount: 0,
+  });
+
+  useEffect(() => {
+    if (!treeStamp || treeStamp === previousStamp.current) return;
+    const next = project?.place_tree ?? null;
+    if (previousStamp.current !== null) setTreeDiff(diffTrees(previousTree.current, next));
+    previousStamp.current = treeStamp;
+    previousTree.current = next;
+  }, [treeStamp, project?.place_tree]);
+
+
 
   const dispatch = useMutation({
     mutationFn: async (args: {
@@ -355,8 +380,32 @@ function ProjectWorkspace() {
 
       if (!response.ok || !response.body) {
         const detail = (await response.json().catch(() => null)) as { error?: string } | null;
+        // Billing/limit problems are a status, not a crash: keep the draft text
+        // so nothing is lost and surface a clear banner instead.
+        if (response.status === 402) {
+          setInput(text);
+          setImages(pendingImages);
+          setServiceIssue({
+            title: "AI credits exhausted",
+            detail:
+              detail?.error ??
+              "Your workspace is out of AI credits. Everything else still works — Studio commands, reverts and the Explorer keep running. Top up credits to keep chatting.",
+          });
+          return;
+        }
+        if (response.status === 429) {
+          setInput(text);
+          setImages(pendingImages);
+          setServiceIssue({
+            title: "Rate limit reached",
+            detail: detail?.error ?? "Too many requests right now. Try again in a moment.",
+          });
+          return;
+        }
         throw new Error(detail?.error ?? "The AI service failed to respond.");
       }
+      setServiceIssue(null);
+
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -528,7 +577,29 @@ function ProjectWorkspace() {
           </div>
 
           <div className="border-t bg-surface/40 px-5 py-4">
+            {serviceIssue ? (
+              <div
+                role="status"
+                data-testid="service-issue"
+                className="mb-3 flex animate-fade-up items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs"
+              >
+                <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-warning">{serviceIssue.title}</p>
+                  <p className="mt-0.5 text-muted-foreground">{serviceIssue.detail}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-1.5 text-xs"
+                  onClick={() => setServiceIssue(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            ) : null}
             <div className="mb-2 flex flex-wrap items-center gap-4 text-xs">
+
               <label className="flex items-center gap-2">
                 <Switch
                   checked={project.smart_mode}
@@ -704,11 +775,26 @@ function ProjectWorkspace() {
 
             <TabsContent value="explorer" className="scroll-slim min-h-0 flex-1 overflow-auto">
               <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b bg-background/95 px-3 py-2 backdrop-blur">
-                <p className="truncate text-xs text-muted-foreground">
-                  {project.place_tree_updated_at
-                    ? `Updated ${new Date(project.place_tree_updated_at).toLocaleTimeString()}`
-                    : "Never synced"}
-                  {status === "connected" ? " · live" : ""}
+                <p className="flex min-w-0 items-center gap-1.5 truncate text-xs text-muted-foreground">
+                  {status === "connected" ? (
+                    <span className="inline-block size-1.5 shrink-0 animate-live-dot rounded-full bg-success" />
+                  ) : null}
+                  <span className="truncate">
+                    {project.place_tree_updated_at
+                      ? `Updated ${new Date(project.place_tree_updated_at).toLocaleTimeString()}`
+                      : "Never synced"}
+                    {status === "connected" ? " · live" : ""}
+                  </span>
+                  {treeDiff.added.size > 0 ? (
+                    <span className="animate-pop-in shrink-0 text-success">
+                      +{treeDiff.added.size}
+                    </span>
+                  ) : null}
+                  {treeDiff.removedCount > 0 ? (
+                    <span className="animate-pop-in shrink-0 text-destructive">
+                      −{treeDiff.removedCount}
+                    </span>
+                  ) : null}
                 </p>
                 <Button
                   size="sm"
@@ -723,8 +809,10 @@ function ProjectWorkspace() {
               </div>
               <ExplorerTree
                 tree={project.place_tree}
+                changed={treeDiff.added}
                 onSelect={(path) => setInput((value) => `${value}${value ? " " : ""}@${path} `)}
               />
+
             </TabsContent>
 
             <TabsContent

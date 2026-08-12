@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createAccount, signInWithPassword, useAuth } from "@/hooks/useAuth";
+import { createAccount, sendPasswordReset, signInWithPassword, useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -41,6 +41,23 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const resetPassword = async () => {
+    if (busy) return;
+    if (!email.trim()) {
+      toast.error("Enter your email first, then tap Forgot password.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await sendPasswordReset(email.trim());
+      toast.success("Reset link sent — check your inbox.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send the reset email.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (busy) return;
@@ -69,7 +86,7 @@ function AuthPage() {
 
   return (
     <main className="grid min-h-screen place-items-center bg-background px-4 py-12">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm animate-fade-up">
         <div className="mb-6 flex justify-center">
           <Logo />
         </div>
@@ -133,6 +150,18 @@ function AuthPage() {
                     {busy ? <Loader2 className="size-4 animate-spin" /> : null}
                     {mode === "signin" ? "Sign in" : "Create account"}
                   </Button>
+                  {mode === "signin" ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-xs"
+                      disabled={busy}
+                      onClick={() => void resetPassword()}
+                    >
+                      Forgot password?
+                    </Button>
+                  ) : null}
                 </form>
               </TabsContent>
             </Tabs>

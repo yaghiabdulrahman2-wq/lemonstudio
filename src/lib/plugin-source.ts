@@ -555,8 +555,69 @@ local function executeCommand(command: any)
 end
 
 ----------------------------------------------------------------------
+-- Event driven Explorer sync
+----------------------------------------------------------------------
+
+local treeDirty = false
+local treeSyncing = false
+local lastTreeSync = 0
+local treeConnections = {}
+
+local function pushTree()
+	if treeSyncing then
+		return
+	end
+	treeSyncing = true
+	local ok, tree = pcall(collectPlaceTree)
+	if ok then
+		local sent, sendErr = request("/api/public/plugin/tree", {
+			token = token,
+			placeName = game.Name,
+			tree = tree,
+		})
+		if not sent then
+			log("tree upload failed: " .. tostring(sendErr))
+		else
+			log("explorer synced (" .. tostring(tree.nodeCount) .. " nodes)")
+		end
+	end
+	lastTreeSync = os.clock()
+	treeSyncing = false
+end
+
+-- Marks the hierarchy as changed; the sync loop uploads it once things settle.
+local function markTreeDirty()
+	treeDirty = true
+end
+
+local function watchPlace()
+	for _, conn in ipairs(treeConnections) do
+		pcall(function()
+			conn:Disconnect()
+		end)
+	end
+	treeConnections = {}
+	table.insert(treeConnections, game.DescendantAdded:Connect(markTreeDirty))
+	table.insert(treeConnections, game.DescendantRemoving:Connect(markTreeDirty))
+end
+
+local function startTreeLoop()
+	task.spawn(function()
+		while connected do
+			-- Debounce: upload at most once every 2s, and only after a change.
+			if treeDirty and os.clock() - lastTreeSync > 2 then
+				treeDirty = false
+				pcall(pushTree)
+			end
+			task.wait(1)
+		end
+	end)
+end
+
+----------------------------------------------------------------------
 -- Connection loop
 ----------------------------------------------------------------------
+
 
 local function reportResult(commandId: string, ok: boolean, result: any, err: string?)
 	local success, response = request("/api/public/plugin/result", {
@@ -603,8 +664,12 @@ local function pollOnce()
 			log("[err] " .. tostring(command.type) .. ": " .. tostring(err))
 		end
 		reportResult(command.id, success, result, err)
+		if command.type ~= "get_tree" and command.type ~= "read_script" then
+			markTreeDirty()
+		end
 	end
 	setStatus("Connected", Color3.fromRGB(120, 220, 150))
+
 end
 
 local function startLoop()
@@ -656,23 +721,14 @@ local function connect()
 	setStatus("Connected", Color3.fromRGB(120, 220, 150))
 	log("connected to " .. tostring(response.projectName))
 
-	-- Send the Explorer tree immediately so the AI has context.
-	task.spawn(function()
-		local tree = collectPlaceTree()
-		local sent, sendErr = request("/api/public/plugin/tree", {
-			token = token,
-			placeName = game.Name,
-			tree = tree,
-		})
-		if not sent then
-			log("tree upload failed: " .. tostring(sendErr))
-		else
-			log("explorer tree synced (" .. tostring(tree.nodeCount) .. " nodes)")
-		end
-	end)
+	-- Push the Explorer tree once now, then only when the place changes.
+	task.spawn(pushTree)
+	watchPlace()
+	startTreeLoop()
 
 	startLoop()
 end
+
 
 connectButton.Activated:Connect(connect)
 

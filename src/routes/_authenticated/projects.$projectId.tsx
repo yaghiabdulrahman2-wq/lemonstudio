@@ -88,6 +88,8 @@ function ProjectWorkspace() {
   const [buildMode, setBuildMode] = useState(false);
   const [autoApply, setAutoApply] = useState(true);
   const [images, setImages] = useState<{ name: string; dataUrl: string }[]>([]);
+  const [serviceIssue, setServiceIssue] = useState<{ title: string; detail: string } | null>(null);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);

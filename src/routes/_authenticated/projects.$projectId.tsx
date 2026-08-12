@@ -152,16 +152,39 @@ function ProjectWorkspace() {
     inputRef.current?.focus();
   }, [projectId, streaming]);
 
-  // Keep the Explorer panel live while the plugin is connected.
+  // The plugin pushes the hierarchy whenever the place changes, so we only ask
+  // for a snapshot once — the moment a plugin connects.
+  const requestedTreeFor = useRef<string | null>(null);
   useEffect(() => {
     if (status !== "connected" || !user) return;
-    const tick = () => {
-      void queueCommand(projectId, user.id, "get_tree", {}).catch(() => undefined);
-    };
-    tick();
-    const id = window.setInterval(tick, 15000);
-    return () => window.clearInterval(id);
-  }, [status, user, projectId]);
+    const key = `${projectId}:${project?.plugin_last_seen_at ? "on" : "off"}`;
+    if (requestedTreeFor.current === key) return;
+    requestedTreeFor.current = key;
+    void queueCommand(projectId, user.id, "get_tree", {}).catch(() => undefined);
+  }, [status, user, projectId, project?.plugin_last_seen_at]);
+
+  useEffect(() => {
+    if (status === "disconnected") requestedTreeFor.current = null;
+  }, [status]);
+
+  // Instant diff: highlight nodes that appeared since the previous snapshot.
+  const treeStamp = project?.place_tree_updated_at ?? null;
+  const previousTree = useRef<{ children?: TreeNode[] } | null>(null);
+  const previousStamp = useRef<string | null>(null);
+  const [treeDiff, setTreeDiff] = useState<{ added: Set<string>; removedCount: number }>({
+    added: new Set(),
+    removedCount: 0,
+  });
+
+  useEffect(() => {
+    if (!treeStamp || treeStamp === previousStamp.current) return;
+    const next = project?.place_tree ?? null;
+    if (previousStamp.current !== null) setTreeDiff(diffTrees(previousTree.current, next));
+    previousStamp.current = treeStamp;
+    previousTree.current = next;
+  }, [treeStamp, project?.place_tree]);
+
+
 
   const dispatch = useMutation({
     mutationFn: async (args: {

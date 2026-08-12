@@ -22,3 +22,33 @@ export function collectScripts(
   walk(tree?.children, "");
   return out;
 }
+
+/** Flattens every node into "Parent/Child" paths so two snapshots can be diffed. */
+export function collectPaths(tree: { children?: TreeNode[] } | null): Set<string> {
+  const out = new Set<string>();
+  const walk = (nodes: TreeNode[] | undefined, prefix: string) => {
+    for (const node of nodes ?? []) {
+      const path = prefix ? `${prefix}/${node.name}` : node.name;
+      out.add(path);
+      walk(node.children, path);
+    }
+  };
+  walk(tree?.children, "");
+  return out;
+}
+
+export type TreeDiff = { added: Set<string>; removedCount: number };
+
+/** Diffs two Explorer snapshots so the UI can highlight what just changed. */
+export function diffTrees(
+  previous: { children?: TreeNode[] } | null,
+  next: { children?: TreeNode[] } | null,
+): TreeDiff {
+  const before = collectPaths(previous);
+  const after = collectPaths(next);
+  const added = new Set<string>();
+  for (const path of after) if (!before.has(path)) added.add(path);
+  let removedCount = 0;
+  for (const path of before) if (!after.has(path)) removedCount += 1;
+  return { added, removedCount };
+}

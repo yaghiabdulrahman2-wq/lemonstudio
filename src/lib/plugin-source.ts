@@ -721,23 +721,14 @@ local function connect()
 	setStatus("Connected", Color3.fromRGB(120, 220, 150))
 	log("connected to " .. tostring(response.projectName))
 
-	-- Send the Explorer tree immediately so the AI has context.
-	task.spawn(function()
-		local tree = collectPlaceTree()
-		local sent, sendErr = request("/api/public/plugin/tree", {
-			token = token,
-			placeName = game.Name,
-			tree = tree,
-		})
-		if not sent then
-			log("tree upload failed: " .. tostring(sendErr))
-		else
-			log("explorer tree synced (" .. tostring(tree.nodeCount) .. " nodes)")
-		end
-	end)
+	-- Push the Explorer tree once now, then only when the place changes.
+	task.spawn(pushTree)
+	watchPlace()
+	startTreeLoop()
 
 	startLoop()
 end
+
 
 connectButton.Activated:Connect(connect)
 

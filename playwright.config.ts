@@ -11,6 +11,10 @@ export default defineConfig({
   use: {
     baseURL: process.env["E2E_BASE_URL"] ?? "http://localhost:8080",
     trace: "retain-on-failure",
+    // Allows running against a preinstalled Chromium (CI sandboxes, Nix, etc.).
+    launchOptions: process.env["CHROMIUM_PATH"]
+      ? { executablePath: process.env["CHROMIUM_PATH"] }
+      : {},
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

@@ -18,21 +18,27 @@ function TreeItem({
   depth,
   path,
   onSelect,
+  changed,
 }: {
   node: TreeNode;
   depth: number;
   path: string;
   onSelect?: ((path: string, node: TreeNode) => void) | undefined;
+  changed?: Set<string> | undefined;
 }) {
   const [open, setOpen] = useState(depth < 1);
   const Icon = iconFor(node.className);
   const hasChildren = Boolean(node.children?.length);
   const fullPath = path ? `${path}/${node.name}` : node.name;
+  const isNew = changed?.has(fullPath) ?? false;
 
   return (
-    <div>
+    <div className="animate-fade-up">
       <div
-        className="flex items-center gap-1 rounded-md px-1 py-1 text-sm hover:bg-surface-2"
+        className={cn(
+          "flex items-center gap-1 rounded-md px-1 py-1 text-sm transition-colors hover:bg-surface-2",
+          isNew && "animate-flash",
+        )}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
       >
         <button
@@ -51,6 +57,7 @@ function TreeItem({
         >
           {node.name}
           <span className="ml-2 font-mono text-[11px] text-muted-foreground">{node.className}</span>
+          {isNew ? <span className="ml-2 text-[10px] font-medium text-primary">new</span> : null}
         </button>
       </div>
       {open && hasChildren
@@ -61,6 +68,7 @@ function TreeItem({
               depth={depth + 1}
               path={fullPath}
               onSelect={onSelect}
+              changed={changed}
             />
           ))
         : null}
@@ -71,9 +79,11 @@ function TreeItem({
 export function ExplorerTree({
   tree,
   onSelect,
+  changed,
 }: {
   tree: { children?: TreeNode[] } | null;
   onSelect?: ((path: string, node: TreeNode) => void) | undefined;
+  changed?: Set<string> | undefined;
 }) {
   if (!tree?.children?.length) {
     return (
@@ -86,8 +96,16 @@ export function ExplorerTree({
   return (
     <div className="scroll-slim overflow-auto p-2">
       {tree.children.map((node, index) => (
-        <TreeItem key={`${node.name}-${index}`} node={node} depth={0} path="" onSelect={onSelect} />
+        <TreeItem
+          key={`${node.name}-${index}`}
+          node={node}
+          depth={0}
+          path=""
+          onSelect={onSelect}
+          changed={changed}
+        />
       ))}
     </div>
   );
 }
+

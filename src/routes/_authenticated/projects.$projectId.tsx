@@ -577,7 +577,29 @@ function ProjectWorkspace() {
           </div>
 
           <div className="border-t bg-surface/40 px-5 py-4">
+            {serviceIssue ? (
+              <div
+                role="status"
+                data-testid="service-issue"
+                className="mb-3 flex animate-fade-up items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs"
+              >
+                <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-warning">{serviceIssue.title}</p>
+                  <p className="mt-0.5 text-muted-foreground">{serviceIssue.detail}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-1.5 text-xs"
+                  onClick={() => setServiceIssue(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            ) : null}
             <div className="mb-2 flex flex-wrap items-center gap-4 text-xs">
+
               <label className="flex items-center gap-2">
                 <Switch
                   checked={project.smart_mode}

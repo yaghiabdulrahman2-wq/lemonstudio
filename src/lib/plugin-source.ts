@@ -664,8 +664,12 @@ local function pollOnce()
 			log("[err] " .. tostring(command.type) .. ": " .. tostring(err))
 		end
 		reportResult(command.id, success, result, err)
+		if command.type ~= "get_tree" and command.type ~= "read_script" then
+			markTreeDirty()
+		end
 	end
 	setStatus("Connected", Color3.fromRGB(120, 220, 150))
+
 end
 
 local function startLoop()

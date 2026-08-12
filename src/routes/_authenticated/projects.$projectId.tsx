@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
+  AlertTriangle,
   Blocks,
   Hammer,
   Loader2,
@@ -21,12 +22,10 @@ import { CodeBlock } from "@/components/code-block";
 import { ExplorerTree, type TreeNode } from "@/components/explorer-tree";
 import { Markdown } from "@/components/markdown";
 import { PluginSetupPanel } from "@/components/plugin-setup";
-import { collectScripts } from "@/lib/explorer-utils";
+import { collectScripts, diffTrees } from "@/lib/explorer-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,6 +40,7 @@ import {
   type CommandRow,
 } from "@/lib/commands";
 import { parseSegments, type Segment } from "@/lib/parse-blocks";
+
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
   head: () => ({

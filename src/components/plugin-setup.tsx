@@ -30,12 +30,18 @@ async function copy(text: string, label: string) {
   }
 }
 
+/** Lovable editor preview origins sit behind auth, so Studio can't reach them. */
+function isPrivateOrigin(origin: string) {
+  return /id-preview--|localhost|127\.0\.0\.1/.test(origin);
+}
+
 export function PluginSetupPanel({ token }: { token: string }) {
   const [origin, setOrigin] = useState("");
   const [copiedToken, setCopiedToken] = useState(false);
 
   useEffect(() => {
-    setOrigin(window.location.origin);
+    const stored = window.localStorage.getItem("lemonade_plugin_origin");
+    setOrigin(stored || window.location.origin);
   }, []);
 
   const source = origin ? buildPluginSource(origin, token) : "";
@@ -75,6 +81,29 @@ export function PluginSetupPanel({ token }: { token: string }) {
         >
           <Copy className="size-4" /> Copy plugin code
         </Button>
+      </div>
+
+      <div>
+        <Label className="text-xs" htmlFor="plugin-origin">
+          Server URL (must be your public site)
+        </Label>
+        <Input
+          id="plugin-origin"
+          value={origin}
+          onChange={(event) => {
+            const next = event.target.value.trim().replace(/\/+$/, "");
+            setOrigin(next);
+            window.localStorage.setItem("lemonade_plugin_origin", next);
+          }}
+          placeholder="https://yourapp.lovable.app"
+          className="mt-1.5 font-mono text-xs"
+        />
+        {isPrivateOrigin(origin) ? (
+          <p className="mt-1.5 animate-fade-up text-xs text-warning">
+            This is a private preview URL — Roblox Studio can&apos;t reach it. Publish the site and
+            paste the public URL here before downloading the plugin.
+          </p>
+        ) : null}
       </div>
 
       <div>

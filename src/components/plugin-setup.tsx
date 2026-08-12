@@ -107,9 +107,12 @@ export function PluginSetupPanel({ token }: { token: string }) {
       </div>
 
       <div>
-        <Label className="text-xs">Connection token</Label>
+        <Label className="text-xs" htmlFor="plugin-token">
+          Connection token
+        </Label>
         <div className="mt-1.5 flex gap-2">
           <Input
+            id="plugin-token"
             readOnly
             value={token}
             className="font-mono text-xs"

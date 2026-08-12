@@ -34,9 +34,9 @@ export const Route = createFileRoute("/api/chat")({
           return new Response(JSON.stringify({ error: "messages are required" }), { status: 400 });
         }
 
-        const apiKey = process.env["LOVABLE_API_KEY"];
+        const apiKey = process.env["OPENROUTER_API_KEY"];
         if (!apiKey) {
-          return new Response(JSON.stringify({ error: "AI is not configured" }), { status: 500 });
+          return new Response(JSON.stringify({ error: "AI is not configured — set OPENROUTER_API_KEY in Cloudflare" }), { status: 500 });
         }
 
         let system = SYSTEM_PROMPT_BASE;
@@ -48,11 +48,13 @@ Place name: ${body.placeName ?? "unknown"}
 Explorer tree (JSON):
 ${summariseTree(body.placeTree)}`;
 
-        const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Lovable-API-Key": apiKey,
+            "Authorization": `Bearer ${apiKey}`,
+            "HTTP-Referer": "https://lemonstudio.ai",
+            "X-Title": "LemonStudio AI",
           },
           body: JSON.stringify({
             model: MODEL,

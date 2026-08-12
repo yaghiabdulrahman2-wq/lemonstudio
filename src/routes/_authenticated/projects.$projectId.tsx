@@ -753,11 +753,26 @@ function ProjectWorkspace() {
 
             <TabsContent value="explorer" className="scroll-slim min-h-0 flex-1 overflow-auto">
               <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b bg-background/95 px-3 py-2 backdrop-blur">
-                <p className="truncate text-xs text-muted-foreground">
-                  {project.place_tree_updated_at
-                    ? `Updated ${new Date(project.place_tree_updated_at).toLocaleTimeString()}`
-                    : "Never synced"}
-                  {status === "connected" ? " · live" : ""}
+                <p className="flex min-w-0 items-center gap-1.5 truncate text-xs text-muted-foreground">
+                  {status === "connected" ? (
+                    <span className="inline-block size-1.5 shrink-0 animate-live-dot rounded-full bg-success" />
+                  ) : null}
+                  <span className="truncate">
+                    {project.place_tree_updated_at
+                      ? `Updated ${new Date(project.place_tree_updated_at).toLocaleTimeString()}`
+                      : "Never synced"}
+                    {status === "connected" ? " · live" : ""}
+                  </span>
+                  {treeDiff.added.size > 0 ? (
+                    <span className="animate-pop-in shrink-0 text-success">
+                      +{treeDiff.added.size}
+                    </span>
+                  ) : null}
+                  {treeDiff.removedCount > 0 ? (
+                    <span className="animate-pop-in shrink-0 text-destructive">
+                      −{treeDiff.removedCount}
+                    </span>
+                  ) : null}
                 </p>
                 <Button
                   size="sm"
@@ -772,8 +787,10 @@ function ProjectWorkspace() {
               </div>
               <ExplorerTree
                 tree={project.place_tree}
+                changed={treeDiff.added}
                 onSelect={(path) => setInput((value) => `${value}${value ? " " : ""}@${path} `)}
               />
+
             </TabsContent>
 
             <TabsContent

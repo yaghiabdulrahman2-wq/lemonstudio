@@ -380,8 +380,32 @@ function ProjectWorkspace() {
 
       if (!response.ok || !response.body) {
         const detail = (await response.json().catch(() => null)) as { error?: string } | null;
+        // Billing/limit problems are a status, not a crash: keep the draft text
+        // so nothing is lost and surface a clear banner instead.
+        if (response.status === 402) {
+          setInput(text);
+          setImages(pendingImages);
+          setServiceIssue({
+            title: "AI credits exhausted",
+            detail:
+              detail?.error ??
+              "Your workspace is out of AI credits. Everything else still works — Studio commands, reverts and the Explorer keep running. Top up credits to keep chatting.",
+          });
+          return;
+        }
+        if (response.status === 429) {
+          setInput(text);
+          setImages(pendingImages);
+          setServiceIssue({
+            title: "Rate limit reached",
+            detail: detail?.error ?? "Too many requests right now. Try again in a moment.",
+          });
+          return;
+        }
         throw new Error(detail?.error ?? "The AI service failed to respond.");
       }
+      setServiceIssue(null);
+
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();

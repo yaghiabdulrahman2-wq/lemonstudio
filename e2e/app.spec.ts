@@ -80,4 +80,59 @@ test.describe("workspace", () => {
     });
     await expect(page.getByRole("button", { name: /remove shot\.png/i })).toBeVisible();
   });
+
+  test("plugin disconnects, reconnects and pushes Explorer changes without polling", async ({
+    page,
+  }) => {
+    const name = unique();
+    await createProject(page, name);
+    await page.getByText(name).first().click();
+
+    const token = await page.getByLabel(/connection token/i).inputValue();
+    const api = page.request;
+    const connect = () =>
+      api.post("/api/public/plugin/connect", {
+        data: { token, placeName: "E2E Place", placeId: "4242" },
+      });
+    const pushTree = (partName: string) =>
+      api.post("/api/public/plugin/tree", {
+        data: {
+          token,
+          placeName: "E2E Place",
+          placeId: "4242",
+          tree: {
+            name: "E2E Place",
+            children: [
+              {
+                name: "Workspace",
+                className: "Workspace",
+                children: [{ name: partName, className: "Part" }],
+              },
+            ],
+          },
+        },
+      });
+
+    expect((await connect()).ok()).toBeTruthy();
+    expect((await pushTree("BeforeReconnect")).ok()).toBeTruthy();
+    await expect(page.getByText("Connected", { exact: true }).first()).toBeVisible();
+    await page.getByRole("tab", { name: /explorer/i }).click();
+    await page.getByRole("button", { name: "Workspace" }).click();
+    await expect(page.getByRole("button", { name: /BeforeReconnect/ })).toBeVisible();
+
+    // Let the 8-second heartbeat expire. No endpoint call keeps it artificially connected.
+    await expect(page.getByText("Disconnected", { exact: true }).first()).toBeVisible({
+      timeout: 12_000,
+    });
+
+    expect((await connect()).ok()).toBeTruthy();
+    await expect(page.getByText("Connected", { exact: true }).first()).toBeVisible();
+
+    const pushedAt = Date.now();
+    expect((await pushTree("AfterReconnect")).ok()).toBeTruthy();
+    await expect(page.getByRole("button", { name: /AfterReconnect/ })).toBeVisible({
+      timeout: 2_500,
+    });
+    expect(Date.now() - pushedAt).toBeLessThan(2_500);
+  });
 });

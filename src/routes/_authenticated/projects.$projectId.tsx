@@ -3,6 +3,9 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangle,
   Blocks,
+  CheckCircle2,
+  CircleX,
+  Clock3,
   Hammer,
   Loader2,
   Mountain,
@@ -89,6 +92,7 @@ function ProjectWorkspace() {
   const [autoApply, setAutoApply] = useState(true);
   const [images, setImages] = useState<{ name: string; dataUrl: string }[]>([]);
   const [serviceIssue, setServiceIssue] = useState<{ title: string; detail: string } | null>(null);
+  const [, setClock] = useState(0);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -106,7 +110,6 @@ function ProjectWorkspace() {
       return (data as unknown as ProjectRow | null) ?? null;
     },
     retry: 1,
-    refetchInterval: 4000,
   });
 
   const messagesQuery = useQuery({
@@ -123,7 +126,6 @@ function ProjectWorkspace() {
         attachments: Array.isArray(m.attachments) ? m.attachments : [],
       }));
     },
-    refetchInterval: 5000,
   });
 
   const commandsQuery = useQuery({
@@ -138,12 +140,44 @@ function ProjectWorkspace() {
       if (error) throw new Error(error.message);
       return (data ?? []) as unknown as CommandRow[];
     },
-    refetchInterval: 3000,
   });
+
+  // Database change events keep heartbeat, command state and Explorer snapshots
+  // current without fixed polling. The clock only updates the local age labels.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`workspace:${projectId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "projects", filter: `id=eq.${projectId}` },
+        () => void queryClient.invalidateQueries({ queryKey: ["project", projectId] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "commands", filter: `project_id=eq.${projectId}` },
+        () => void queryClient.invalidateQueries({ queryKey: ["commands", projectId] }),
+      )
+      .subscribe();
+
+    const clock = window.setInterval(() => setClock((value) => value + 1), 1000);
+    return () => {
+      window.clearInterval(clock);
+      void supabase.removeChannel(channel);
+    };
+  }, [projectId, queryClient]);
 
   const project = projectQuery.data;
   const status = connectionState(project?.plugin_last_seen_at);
   const messages = messagesQuery.data ?? [];
+  const commands = commandsQuery.data ?? [];
+  const lastSuccessfulCommand = commands.find((command) => command.status === "done");
+  const lastFailedCommand = commands.find((command) => command.status === "error");
+  const oldestQueuedCommand = [...commands]
+    .reverse()
+    .find((command) => command.status === "pending" || command.status === "running");
+  const heartbeatAge = project?.plugin_last_seen_at
+    ? Math.max(0, Math.floor((Date.now() - new Date(project.plugin_last_seen_at).getTime()) / 1000))
+    : null;
   const scripts = useMemo(() => collectScripts(project?.place_tree ?? null), [project?.place_tree]);
 
   useEffect(() => {
@@ -726,19 +760,80 @@ function ProjectWorkspace() {
             >
               <PluginSetupPanel token={project.connection_token} />
 
-              <Card className="mt-4 space-y-2 bg-surface/60 p-3 text-xs text-muted-foreground">
-                <p>
-                  Last heartbeat:{" "}
-                  {project.plugin_last_seen_at
-                    ? new Date(project.plugin_last_seen_at).toLocaleTimeString()
-                    : "never"}
-                </p>
-                <p>
-                  Explorer synced:{" "}
-                  {project.place_tree_updated_at
-                    ? new Date(project.place_tree_updated_at).toLocaleTimeString()
-                    : "never"}
-                </p>
+              <Card className="mt-4 space-y-3 bg-surface/60 p-3 text-xs" data-testid="connection-diagnostics">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold">Connection diagnostics</p>
+                  <Badge variant="outline" className={statusBadge.className}>
+                    {statusBadge.label}
+                  </Badge>
+                </div>
+
+                <div className="space-y-2 text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <Clock3 className="mt-0.5 size-3.5 shrink-0" />
+                    <div>
+                      <p className="text-foreground">Plugin heartbeat</p>
+                      <p>
+                        {heartbeatAge === null
+                          ? "Never received"
+                          : `${heartbeatAge}s ago · ${new Date(project.plugin_last_seen_at ?? "").toLocaleTimeString()}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success" />
+                    <div className="min-w-0">
+                      <p className="text-foreground">Last successful command</p>
+                      <p className="break-words">
+                        {lastSuccessfulCommand
+                          ? `${lastSuccessfulCommand.type} · ${new Date(lastSuccessfulCommand.completed_at ?? lastSuccessfulCommand.created_at).toLocaleTimeString()}`
+                          : "No command completed yet"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <RefreshCw className="mt-0.5 size-3.5 shrink-0" />
+                    <div>
+                      <p className="text-foreground">Explorer snapshot</p>
+                      <p>
+                        {project.place_tree_updated_at
+                          ? new Date(project.place_tree_updated_at).toLocaleTimeString()
+                          : "Never received"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {status !== "connected" || lastFailedCommand || oldestQueuedCommand ? (
+                  <div className="space-y-2 border-t pt-3">
+                    {status !== "connected" ? (
+                      <div className="flex gap-2 text-warning">
+                        <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                        <p>
+                          {heartbeatAge === null
+                            ? "No plugin has reached this project. Check the public Server URL, token, and Allow HTTP Requests in Studio."
+                            : "Studio stopped sending heartbeats. Reopen the plugin and press Reconnect; queued commands are preserved."}
+                        </p>
+                      </div>
+                    ) : null}
+                    {oldestQueuedCommand ? (
+                      <p className="text-warning">
+                        Waiting: {oldestQueuedCommand.type} has been {oldestQueuedCommand.status} since{" "}
+                        {new Date(oldestQueuedCommand.created_at).toLocaleTimeString()}.
+                      </p>
+                    ) : null}
+                    {lastFailedCommand ? (
+                      <div className="flex gap-2 text-destructive">
+                        <CircleX className="mt-0.5 size-3.5 shrink-0" />
+                        <p className="min-w-0 break-words">
+                          {lastFailedCommand.type}: {lastFailedCommand.error ?? "Studio reported an unknown error."}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </Card>
 
               <div className="mt-4 grid gap-2">
@@ -819,11 +914,11 @@ function ProjectWorkspace() {
               value="activity"
               className="scroll-slim min-h-0 flex-1 overflow-auto px-4 pb-6"
             >
-              {(commandsQuery.data ?? []).length === 0 ? (
+              {commands.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No commands sent yet.</p>
               ) : (
                 <ul className="space-y-2">
-                  {(commandsQuery.data ?? []).map((command) => (
+                  {commands.map((command) => (
                     <li key={command.id} className="rounded-lg border bg-surface/50 p-2.5 text-xs">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono">{command.type}</span>

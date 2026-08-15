@@ -88,7 +88,7 @@ export function ExplorerTree({
   if (!tree?.children?.length) {
     return (
       <p className="p-4 text-sm text-muted-foreground">
-        No Explorer snapshot yet. Connect the plugin, then hit “Sync place” to pull the hierarchy.
+        No Explorer snapshot yet. Connect the plugin and the hierarchy will appear automatically.
       </p>
     );
   }

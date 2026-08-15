@@ -22,6 +22,9 @@ export const Route = createFileRoute("/api/public/plugin/tree")({
           plugin_last_seen_at: new Date().toISOString(),
         };
         if (typeof body["placeName"] === "string") patch["place_name"] = body["placeName"];
+        if (typeof body["placeId"] === "string" && body["placeId"] !== "0") {
+          patch["place_id"] = body["placeId"];
+        }
 
         const { error } = await auth.admin.from("projects").update(patch).eq("id", auth.project.id);
         if (error) return jsonResponse({ error: "Could not store tree" }, 500);

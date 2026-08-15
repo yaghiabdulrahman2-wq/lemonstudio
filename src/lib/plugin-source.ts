@@ -267,6 +267,13 @@ end
 local VECTOR_PROPS = { Size = true, Position = true, Orientation = true, Velocity = true, Scale = true }
 local COLOR_PROPS = { Color = true, BrickColor = true, Color3 = true }
 
+local function enumItem(enumType: any, name: string, fallback: any): any
+	local ok, item = pcall(function()
+		return enumType[name]
+	end)
+	return ok and item or fallback
+end
+
 local function applyProperties(instance: Instance, properties: { [string]: any }?)
 	if not properties then
 		return
@@ -278,9 +285,9 @@ local function applyProperties(instance: Instance, properties: { [string]: any }
 		elseif COLOR_PROPS[key] then
 			applied = toColor3(value) or value
 		elseif key == "Material" and typeof(value) == "string" then
-			applied = (Enum.Material :: any)[value] or Enum.Material.Plastic
+			applied = enumItem(Enum.Material, value, Enum.Material.Plastic)
 		elseif key == "Shape" and typeof(value) == "string" then
-			applied = (Enum.PartType :: any)[value] or Enum.PartType.Block
+			applied = enumItem(Enum.PartType, value, Enum.PartType.Block)
 		elseif key == "CFrame" and typeof(value) == "table" and #value >= 3 then
 			applied = CFrame.new(value[1], value[2], value[3])
 		end
@@ -501,7 +508,7 @@ handlers["terrain_fill"] = function(payload)
 	local regions = payload.regions or {}
 	local filled = 0
 	for _, region in ipairs(regions) do
-		local material = (Enum.Material :: any)[region.material or "Grass"] or Enum.Material.Grass
+		local material = enumItem(Enum.Material, region.material or "Grass", Enum.Material.Grass)
 		local position = Vector3.new(region.position[1], region.position[2], region.position[3])
 		local size = Vector3.new(region.size[1], region.size[2], region.size[3])
 		if region.shape == "ball" then
@@ -573,6 +580,7 @@ local function pushTree()
 		local sent, sendErr = request("/api/public/plugin/tree", {
 			token = token,
 			placeName = game.Name,
+			placeId = tostring(game.PlaceId),
 			tree = tree,
 		})
 		if not sent then
@@ -695,6 +703,11 @@ local function connect()
 
 	if token == "" then
 		setStatus("Token required", Color3.fromRGB(240, 120, 120))
+		return
+	end
+	if baseUrl == "" or not string.match(baseUrl, "^https?://") then
+		setStatus("Valid server URL required", Color3.fromRGB(240, 120, 120))
+		log("Server URL must start with https://")
 		return
 	end
 

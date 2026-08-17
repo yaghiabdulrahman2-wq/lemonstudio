@@ -69,7 +69,7 @@ export function connectionState(lastSeen: string | null | undefined) {
   if (!lastSeen) return "disconnected" as const;
   const age = Date.now() - new Date(lastSeen).getTime();
   if (age < 8000) return "connected" as const;
-  if (age < 60000) return "stale" as const;
+  if (age < 10000) return "stale" as const;
   return "disconnected" as const;
 }
 

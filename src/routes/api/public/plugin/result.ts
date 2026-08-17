@@ -20,7 +20,7 @@ export const Route = createFileRoute("/api/public/plugin/result")({
         const errorMessage =
           typeof body["error"] === "string" && body["error"].length > 0 ? body["error"] : null;
 
-        const { error } = await auth.admin
+        const { data: updated, error } = await auth.admin
           .from("commands")
           .update({
             status,
@@ -29,13 +29,22 @@ export const Route = createFileRoute("/api/public/plugin/result")({
             completed_at: new Date().toISOString(),
           })
           .eq("id", commandId)
-          .eq("project_id", auth.project.id);
+          .eq("project_id", auth.project.id)
+          .select("type")
+          .maybeSingle();
 
         if (error) return jsonResponse({ error: "Could not store result" }, 500);
+        if (!updated) return jsonResponse({ error: "Unknown command" }, 404);
 
         // A get_tree result doubles as an Explorer snapshot.
         const result = body["result"];
-        if (status === "done" && result && typeof result === "object" && "children" in result) {
+        if (
+          updated.type === "get_tree" &&
+          status === "done" &&
+          result &&
+          typeof result === "object" &&
+          "children" in result
+        ) {
           await auth.admin
             .from("projects")
             .update({ place_tree: result, place_tree_updated_at: new Date().toISOString() })

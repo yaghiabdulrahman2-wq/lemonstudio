@@ -567,6 +567,7 @@ end
 
 local treeDirty = false
 local treeSyncing = false
+local treeLoopRunning = false
 local lastTreeSync = 0
 local treeConnections = {}
 
@@ -610,6 +611,10 @@ local function watchPlace()
 end
 
 local function startTreeLoop()
+	if treeLoopRunning then
+		return
+	end
+	treeLoopRunning = true
 	task.spawn(function()
 		while connected do
 			-- Debounce: upload at most once every 2s, and only after a change.
@@ -619,6 +624,7 @@ local function startTreeLoop()
 			end
 			task.wait(1)
 		end
+		treeLoopRunning = false
 	end)
 end
 
@@ -698,6 +704,9 @@ local function startLoop()
 end
 
 local function connect()
+	-- Stop existing loops before validating and reconnecting. Their guards
+	-- prevent duplicate heartbeat and Explorer upload coroutines.
+	connected = false
 	token = tokenBox.Text:gsub("%s", "")
 	baseUrl = urlBox.Text:gsub("%s", ""):gsub("/+$", "")
 
@@ -722,7 +731,6 @@ local function connect()
 	})
 
 	if not ok then
-		connected = false
 		setStatus("Failed", Color3.fromRGB(240, 120, 120))
 		log(tostring(response))
 		return

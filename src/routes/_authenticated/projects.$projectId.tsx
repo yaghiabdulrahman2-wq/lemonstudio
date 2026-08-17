@@ -444,6 +444,7 @@ function ProjectWorkspace() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let streamError: string | null = null;
 
       for (;;) {
         const { done, value } = await reader.read();
@@ -462,7 +463,16 @@ function ProjectWorkspace() {
           try {
             const parsed = JSON.parse(data) as {
               choices?: { delta?: { content?: string } }[];
+              error?: { message?: string } | string;
             };
+            if (parsed.error) {
+              streamError =
+                typeof parsed.error === "string"
+                  ? parsed.error
+                  : parsed.error.message ?? "The AI stream ended unexpectedly.";
+              await reader.cancel();
+              break;
+            }
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               assistant += delta;
@@ -472,8 +482,15 @@ function ProjectWorkspace() {
             // partial frame — wait for more bytes
           }
         }
+        if (streamError) break;
       }
 
+      if (streamError) {
+        setInput(text);
+        setImages(pendingImages);
+        setServiceIssue({ title: "AI generation interrupted", detail: streamError });
+        throw new Error(streamError);
+      }
       if (assistant.trim()) {
         await supabase.from("messages").insert({
           project_id: projectId,
@@ -519,9 +536,7 @@ function ProjectWorkspace() {
   const statusBadge =
     status === "connected"
       ? { label: "Connected", className: "border-success/40 text-success" }
-      : status === "stale"
-        ? { label: "Waiting for plugin", className: "border-warning/40 text-warning" }
-        : { label: "Disconnected", className: "border-destructive/40 text-destructive" };
+      : { label: "Disconnected", className: "border-destructive/40 text-destructive" };
 
   return (
     <div className="flex h-[calc(100vh-0px)] min-h-0 flex-col">

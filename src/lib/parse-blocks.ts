@@ -59,7 +59,7 @@ export function parseSegments(content: string): Segment[] {
   let cursor = 0;
   let index = 0;
 
-  const fence = /```([^\n]*)\n([\s\S]*?)(?:```|$)/g;
+  const fence = /```([^\n]*)\n([\s\S]*?)(```|$)/g;
   let match = fence.exec(content);
   while (match !== null) {
     if (match.index > cursor) {
@@ -69,6 +69,7 @@ export function parseSegments(content: string): Segment[] {
 
     const { lang, meta } = parseMeta(match[1] ?? "");
     const code = (match[2] ?? "").replace(/\n$/, "");
+    const closed = match[3] === "```";
     const id = `b${index++}`;
 
     if (lang === "lemonade-build") {
@@ -82,12 +83,12 @@ export function parseSegments(content: string): Segment[] {
         parentPath: meta["parent"] ?? "Workspace",
         name: meta["name"] ?? "Build",
         tree,
-        valid: tree.length > 0,
+        valid: closed && tree.length > 0,
       });
     } else if (lang === "lemonade-terrain") {
       const parsed = safeJson(code);
       const regions = Array.isArray(parsed?.["regions"]) ? (parsed["regions"] as unknown[]) : [];
-      segments.push({ kind: "terrain", id, code, regions, valid: regions.length > 0 });
+      segments.push({ kind: "terrain", id, code, regions, valid: closed && regions.length > 0 });
     } else {
       const className = meta["class"];
       const validClass =
@@ -101,7 +102,9 @@ export function parseSegments(content: string): Segment[] {
         name: meta["name"] ?? "LemonadeScript",
         className: validClass ? className : "Script",
         applyable:
-          (lang === "luau" || lang === "lua") && Boolean(meta["path"] ?? meta["name"] ?? className),
+          closed &&
+          (lang === "luau" || lang === "lua") &&
+          Boolean(meta["path"] ?? meta["name"] ?? className),
       });
     }
 

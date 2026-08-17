@@ -536,9 +536,7 @@ function ProjectWorkspace() {
   const statusBadge =
     status === "connected"
       ? { label: "Connected", className: "border-success/40 text-success" }
-      : status === "stale"
-        ? { label: "Waiting for plugin", className: "border-warning/40 text-warning" }
-        : { label: "Disconnected", className: "border-destructive/40 text-destructive" };
+      : { label: "Disconnected", className: "border-destructive/40 text-destructive" };
 
   return (
     <div className="flex h-[calc(100vh-0px)] min-h-0 flex-col">
